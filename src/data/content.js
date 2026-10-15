@@ -17,7 +17,7 @@ import avatar3 from '../assets/images/avatar-3.png';
 import clienteMude from '../assets/images/cliente-mude.png';
 
 export const heroText =
-  'Somos um estúdio de design orgulhosamente brasileiro. Trabalhamos na intersecção de marca, experiência e interfaces';
+  'Somos um estúdio de design e estratégia orgulhosamente brasileiro, um parceiro ideal para organizações que entendem a importância de acelerar sem abrir mão da autenticidade.';
 
 // size: a = 300×400, b = 250×333, c = 280×373 (medidas do Figma em px)
 export const heroImages = [
