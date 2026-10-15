@@ -1,26 +1,53 @@
 ---
 import { tenYears } from '../data/content.js';
 import { splitText } from '../lib/split.js';
-import SplitChars from './SplitChars.astro';
+
+// Texto único do Figma: a parte fixa ("Há 10 anos ajudamos grandes empresas")
+// fica parada e só o complemento troca com o scroll.
+const lead = splitText(tenYears.lead);
+const phrases = tenYears.phrases.map((p) => splitText(p));
 ---
 
 <section class="ten" aria-labelledby="ten-title" data-phrases>
   <div class="ten__sticky">
-    <p class="ten__title reveal-chars" id="ten-title" data-reveal>
-      <SplitChars text={`${tenYears.title[0]} ${tenYears.title[1]}`} step={1} />
-    </p>
-
-    <!-- Versão para leitores de tela: todas as frases, sem animação -->
+    <!-- Versão para leitores de tela: as frases completas, sem animação -->
+    <h2 class="visually-hidden" id="ten-title">{tenYears.lead}</h2>
     <ul class="visually-hidden">
-      {tenYears.phrases.map((p) => <li>{p}</li>)}
+      {tenYears.phrases.map((p) => <li>{tenYears.lead} {p}</li>)}
     </ul>
 
-    <!-- Troca de frase: letras saem para cima e entram de baixo com blur (Prolab) -->
-    <div class="ten__phrases" aria-hidden="true">
+    <!--
+      Camadas empilhadas no mesmo lugar. A primeira mostra a parte fixa;
+      cada uma das outras repete a parte fixa invisível (para o complemento
+      começar exatamente depois de "empresas") e anima só o complemento.
+    -->
+    <div class="ten__text" aria-hidden="true" data-phrase-text>
+      <p class="ten__layer ten__lead">
+        {
+          lead.map((w) => (
+            <>
+              <span class="split-word">
+                {w.chars.map((c) => (
+                  <span class={`ch cd${c.i}`}>{c.ch}</span>
+                ))}
+              </span>{' '}
+            </>
+          ))
+        }
+      </p>
       {
-        tenYears.phrases.map((phrase, i) => (
-          <p class={`phrase${i === 0 ? ' is-active' : ''}`} data-phrase={i}>
-            {splitText(phrase).map((w) => (
+        phrases.map((words, i) => (
+          <p class="ten__layer phrase" data-phrase={i}>
+            {lead.map((w) => (
+              <>
+                <span class="split-word ten__ghost">
+                  {w.chars.map((c) => (
+                    <span class="ch">{c.ch}</span>
+                  ))}
+                </span>{' '}
+              </>
+            ))}
+            {words.map((w) => (
               <>
                 <span class="split-word">
                   {w.chars.map((c) => (
@@ -32,12 +59,6 @@ import SplitChars from './SplitChars.astro';
           </p>
         ))
       }
-    </div>
-
-    <div class="ten__progress reveal" aria-hidden="true">
-      <span class="ten__count" data-phrase-count>01</span>
-      <span class="ten__bar"><span class="ten__bar-fill" data-phrase-bar></span></span>
-      <span class="ten__count">{String(tenYears.phrases.length).padStart(2, '0')}</span>
     </div>
   </div>
 </section>
