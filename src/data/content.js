@@ -28,16 +28,15 @@ export const heroImages = [
   { src: hero5, size: 'b', alt: 'Relógio inteligente exibindo saldo de investimentos' },
 ];
 
+// 10 Anos: a parte fixa fica parada e o complemento troca com o scroll
 export const tenYears = {
-  title: ['Há 10 anos ajudamos grandes empresas', 'com desafios complexos de design'],
+  lead: 'Há 10 anos ajudamos grandes empresas',
   phrases: [
-    'Repensar a experiência de um produto',
-    'Criar ou evoluir um design system',
-    'Levar mais marca para as interfaces',
-    'Repensar os processos de design com IA',
-    'Ressignificar o design como disciplina',
-    'Criar assets de marca com ajuda da IA',
-    'Criar ou evoluir identidades',
+    'com desafios complexos de design',
+    'a reimaginar a experiência de um serviço',
+    'a evoluir seu design system',
+    'a repensar processos de design com IA',
+    'a sistematizar a governança da marca',
   ],
 };
 
@@ -98,8 +97,10 @@ export const menu = [
   { label: 'Contato', href: '#contato' },
 ];
 
-// Reel: prévia em loop no menu e vídeo completo no Vimeo (o mesmo do meiuca.design)
+// Reel: prévia em loop no canto da tela e vídeo completo no Vimeo (o mesmo do meiuca.design).
+// O Vimeo só deixa tocar em meiuca.design; nos outros endereços aparece a prévia em alta.
 export const reel = {
+  title: 'Reel Meiuca',
   duration: '1:32',
   vimeoId: '1059077959',
 };
