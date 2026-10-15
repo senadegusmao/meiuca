@@ -1,0 +1,76 @@
+---
+import { getImage } from 'astro:assets';
+import Logo from '../assets/svg/logo.svg';
+import reelPoster from '../assets/images/reel-poster.png';
+import { menu, reel } from '../data/content.js';
+
+const poster = await getImage({ src: reelPoster, width: 1280, format: 'webp', quality: 80 });
+---
+
+<header class="site-header" data-header>
+  <a href="/" class="site-header__logo enter d1" aria-label="Meiuca — página inicial">
+    <Logo width="100" height="30" aria-hidden="true" />
+  </a>
+  <button
+    class="site-header__toggle enter d2"
+    type="button"
+    aria-expanded="false"
+    aria-controls="menu"
+    data-menu-toggle
+  >
+    <span class="site-header__toggle-label" data-label-closed>Menu</span>
+    <span class="site-header__toggle-label" data-label-open aria-hidden="true">Fechar</span>
+  </button>
+</header>
+
+<!--
+  Menu aberto: mesma estrutura e comportamento do menu do meiuca.design
+  (painel que desce do topo com 672px, reel à esquerda e links à direita),
+  com o fundo de vidro e o hover do joaosena.com.
+-->
+<div class="menu" id="menu" data-menu hidden>
+  <div class="menu__panel">
+    <div class="menu__grid">
+      <div class="menu__reel">
+        <button class="menu__reel-media" type="button" data-reel-open aria-label={`Assistir ao reel da Meiuca (${reel.duration})`}>
+          <video
+            muted
+            loop
+            playsinline
+            preload="none"
+            poster={poster.src}
+            aria-hidden="true"
+            tabindex="-1"
+            data-reel-preview
+          >
+            <source data-src="/media/reel-preview.webm" type="video/webm" />
+            <source data-src="/media/reel-preview.mp4" type="video/mp4" />
+          </video>
+        </button>
+        <p class="menu__reel-label">Play reel - {reel.duration}</p>
+      </div>
+
+      <nav class="menu__nav" aria-label="Principal">
+        <ul class="menu__list" role="list">
+          {
+            menu.map((item) => (
+              <li class="menu__item">
+                <a class="menu__link" href={item.href} data-menu-link>
+                  <span>{item.label}</span>
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+    </div>
+  </div>
+  <div class="menu__scrim" data-menu-dismiss></div>
+</div>
+
+<!-- Reel completo: o player do Vimeo só é carregado quando a pessoa clica -->
+<div class="reel-modal" role="dialog" aria-modal="true" aria-label="Reel da Meiuca" data-reel-modal hidden>
+  <div class="reel-modal__backdrop" data-reel-close></div>
+  <div class="reel-modal__frame" data-reel-frame data-vimeo-id={reel.vimeoId}></div>
+  <button class="reel-modal__close" type="button" data-reel-close>Fechar</button>
+</div>

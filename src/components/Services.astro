@@ -1,0 +1,43 @@
+---
+import { Picture } from 'astro:assets';
+import { services } from '../data/content.js';
+---
+
+<section class="services" id="servicos" aria-labelledby="services-title">
+  <h2 id="services-title" class="visually-hidden">Serviços</h2>
+
+  <!--
+    Cards empilhados (mesma mecânica do Prolab):
+    cada card é sticky (top 0 / 50 / 100 / 150px), 100vh de altura, com 65px de
+    intervalo entre eles. Conforme a seção rola, cada card encolhe (escala final
+    0.4 / 0.5 / 0.6 / 0.7) e sobe até 100px. O título de cada card aparece letra
+    por letra quando o card entra na tela.
+  -->
+  <ol class="services__stack" data-stack>
+    {
+      services.map((s, i) => (
+        <li class={`service-card${s.position ? ' service-card--top' : ''}`} data-card={i}>
+          <div class="service-card__frame">
+            <Picture
+              class="service-card__img"
+              src={s.image}
+              alt=""
+              formats={['avif', 'webp']}
+              fallbackFormat="jpg"
+              quality={85}
+              widths={[640, 960, 1280, 1600, 1920, 2400, 2880, 3440, 4080]}
+              sizes="100vw"
+              loading={i === 0 ? 'eager' : 'lazy'}
+              decoding="async"
+            />
+            <span class="service-card__shade" aria-hidden="true" />
+            <div class="service-card__label" data-label>
+              <h3 class="service-card__name" data-split="name">{s.name}</h3>
+            </div>
+          </div>
+        </li>
+      ))
+    }
+  </ol>
+
+</section>

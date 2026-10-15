@@ -1,0 +1,43 @@
+---
+import { tenYears } from '../data/content.js';
+import { splitText } from '../lib/split.js';
+import SplitChars from './SplitChars.astro';
+---
+
+<section class="ten" aria-labelledby="ten-title" data-phrases>
+  <div class="ten__sticky">
+    <p class="ten__title reveal-chars" id="ten-title" data-reveal>
+      <SplitChars text={`${tenYears.title[0]} ${tenYears.title[1]}`} step={1} />
+    </p>
+
+    <!-- Versão para leitores de tela: todas as frases, sem animação -->
+    <ul class="visually-hidden">
+      {tenYears.phrases.map((p) => <li>{p}</li>)}
+    </ul>
+
+    <!-- Troca de frase: letras saem para cima e entram de baixo com blur (Prolab) -->
+    <div class="ten__phrases" aria-hidden="true">
+      {
+        tenYears.phrases.map((phrase, i) => (
+          <p class={`phrase${i === 0 ? ' is-active' : ''}`} data-phrase={i}>
+            {splitText(phrase).map((w) => (
+              <>
+                <span class="split-word">
+                  {w.chars.map((c) => (
+                    <span class={`ch cd${Math.min(c.i, 239)}`}>{c.ch}</span>
+                  ))}
+                </span>{' '}
+              </>
+            ))}
+          </p>
+        ))
+      }
+    </div>
+
+    <div class="ten__progress reveal" aria-hidden="true">
+      <span class="ten__count" data-phrase-count>01</span>
+      <span class="ten__bar"><span class="ten__bar-fill" data-phrase-bar></span></span>
+      <span class="ten__count">{String(tenYears.phrases.length).padStart(2, '0')}</span>
+    </div>
+  </div>
+</section>

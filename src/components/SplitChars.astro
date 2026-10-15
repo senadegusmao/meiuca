@@ -1,0 +1,25 @@
+---
+// Texto partido em letras. Leitores de tela recebem o texto inteiro.
+// mode="enter": anima na abertura do site (CSS, depois da intro)
+// mode="reveal": anima quando entra na tela (JS adiciona .is-in no pai .reveal-chars)
+import { splitText } from '../lib/split.js';
+interface Props {
+  text: string;
+  mode?: 'enter' | 'reveal' | 'none';
+  wordClass?: string;
+  step?: number;
+}
+const { text, mode = 'reveal', wordClass = '', step = 1 } = Astro.props;
+const words = splitText(text);
+const charClass = mode === 'enter' ? 'enter-char ch' : 'ch';
+---
+
+<span class="visually-hidden">{text}</span><span aria-hidden="true">{
+  words.map((w) => (
+    <>
+      <span class={`split-word ${wordClass}`.trim()}>
+        {w.chars.map((c) => <span class={`${charClass} cd${Math.min(Math.round(c.i * step), 239)}`}>{c.ch}</span>)}
+      </span>{' '}
+    </>
+  ))
+}</span>

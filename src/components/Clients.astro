@@ -1,0 +1,47 @@
+---
+import { Picture } from 'astro:assets';
+import { clients } from '../data/content.js';
+import SplitChars from './SplitChars.astro';
+---
+
+<section class="clients" aria-labelledby="clients-title" data-clients>
+  <h2 class="clients__title reveal-chars" id="clients-title" data-reveal><SplitChars text="Clientes" /></h2>
+
+  <ul class="clients__list" role="list">
+    {
+      clients.map((c, i) => (
+        <li class={`clients__item reveal reveal-i${Math.min(i, 9)}`} data-client={c.image ? i : undefined}>
+          {c.name}
+        </li>
+      ))
+    }
+  </ul>
+
+  <!-- Cursor: ponto azul que segue o mouse e prévia do projeto do cliente -->
+  <div class="clients__cursor" aria-hidden="true" data-clients-cursor>
+    <span class="clients__dot"></span>
+    <div class="clients__preview">
+      {
+        clients.map((c, i) =>
+          c.image ? (
+            <div class="clients__shot" data-shot={i}>
+              <Picture
+                src={c.image}
+                alt=""
+                formats={['avif', 'webp']}
+                fallbackFormat="jpg"
+                quality={85}
+                widths={[240, 480, 720, 960]}
+                sizes="240px"
+                width={240}
+                height={180}
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+          ) : null,
+        )
+      }
+    </div>
+  </div>
+</section>

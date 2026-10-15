@@ -1,0 +1,73 @@
+---
+import { nav, contact } from '../data/content.js';
+import Arrow from '../assets/svg/arrow.svg';
+
+const year = new Date().getFullYear();
+
+// Paths do logo do Figma (nó 783:312), separados por letra para a animação.
+const letters = [
+  'M216.298 433.873V164.298L158.025 342.147H121.381L66.1617 167.947V433.873H0V0H59.5456L142.502 228.663L222.914 0H284.241V433.873H216.298Z',
+  'M341.369 0H516.825V62.0191H407.404V184.754H501.812V246.122H407.404V371.984H516.825V434.004H341.369V0Z',
+  'M567.844 433.873V0H634.006V433.873H567.844Z',
+  'M905.652 325.47C905.652 389.964 863.029 437 799.921 437C735.668 437 694.189 389.834 694.189 325.47V0H759.715V329.118C759.715 359.476 777.146 375.632 799.921 375.632C820.914 375.632 840.127 359.476 840.127 329.118V0H905.652V325.47Z',
+  'M1171.19 316.089C1171.19 379.932 1141.8 433.873 1066.6 433.873C968.632 433.873 956.673 364.427 956.673 217.588C956.673 69.4458 968.76 0 1066.6 0C1144.72 0 1171.19 48.3384 1171.19 116.481H1106.3C1106.3 81.8235 1097.9 59.4133 1066.6 59.4133C1019.14 59.4133 1021.56 125.732 1021.56 216.806C1021.56 304.884 1019.14 373.027 1066.6 373.027C1095.48 373.027 1106.81 353.222 1106.81 315.959H1171.19V316.089Z',
+  'M1331.63 0C1404.92 0 1438 44.6902 1438 110.358V433.873H1372.47V247.295H1291.3V433.873H1225.14V110.358C1225.26 47.1658 1259.62 0 1331.63 0ZM1292.57 188.403H1373.75V107.882C1373.75 77.5239 1355.17 62.6706 1332.9 62.6706C1311.27 62.6706 1292.7 77.5239 1292.7 107.882V188.403H1292.57Z',
+];
+---
+
+<footer class="footer" id="contato">
+  <div class="footer__top">
+    <form class="newsletter reveal" action="#" method="post" novalidate data-newsletter>
+      <label class="newsletter__label" for="newsletter-email">Inscreva-se na news</label>
+      <div class="newsletter__field">
+        <input
+          id="newsletter-email"
+          name="email"
+          type="email"
+          inputmode="email"
+          autocomplete="email"
+          placeholder="exemplo@email.com"
+          maxlength="254"
+          required
+          aria-describedby="newsletter-help"
+        />
+        <button class="newsletter__submit" type="submit" aria-label="Inscrever">
+          <Arrow width="16" height="16" aria-hidden="true" />
+        </button>
+      </div>
+      <p class="newsletter__help" id="newsletter-help" data-newsletter-msg aria-live="polite"></p>
+    </form>
+    <p class="footer__copy reveal">Todos os direitos © Meiuca {year}</p>
+  </div>
+
+  <hr class="footer__rule" />
+
+  <div class="footer__links reveal">
+    <nav aria-label="Rodapé">
+      <ul class="footer__list" role="list">
+        {nav.map((item) => <li><a href={item.href}>{item.label}</a></li>)}
+      </ul>
+    </nav>
+    <div><a href={`mailto:${contact.email}`}>{contact.email}</a></div>
+    <ul class="footer__social" role="list">
+      {
+        contact.social.map((s) => (
+          <li>
+            <a href={s.href} aria-label={s.name} rel="noopener noreferrer" target="_blank">
+              {s.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+    <address class="footer__address">
+      {contact.address.map((line) => <span>{line}</span>)}
+    </address>
+  </div>
+
+  <div class="footer__logo" data-logo-reveal>
+    <svg viewBox="0 0 1438 437" role="img" aria-label="Meiuca">
+      {letters.map((d, i) => <path class={`footer__letter fl${i}`} d={d} fill="currentColor" />)}
+    </svg>
+  </div>
+</footer>

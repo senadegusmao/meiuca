@@ -1,0 +1,66 @@
+---
+import { Picture, Image } from 'astro:assets';
+import { posts } from '../data/content.js';
+import SplitChars from './SplitChars.astro';
+---
+
+<section class="blog" id="blog" aria-labelledby="blog-title">
+  <header class="blog__header">
+    <h2 class="blog__title reveal-chars" id="blog-title" data-reveal><SplitChars text="Insights" /></h2>
+  </header>
+
+  <ul class="blog__list" role="list">
+    {
+      posts.map((post, i) => (
+        <li class={`blog__item reveal reveal-d${i}`}>
+          <a class={`post-card${post.bg === 'soft' ? ' post-card--soft' : ''}`} href={post.href} data-cursor="Ler artigo">
+            <span class="post-card__bg" aria-hidden="true">
+              <Image src={post.image} alt="" widths={[260, 520]} sizes="520px" quality={80} loading="lazy" decoding="async" format="webp" />
+            </span>
+            <span class="post-card__category">{post.category}</span>
+            <span class="post-card__thumb">
+              <Picture
+                src={post.image}
+                alt={post.imageAlt}
+                formats={['avif', 'webp']}
+                fallbackFormat="jpg"
+                quality={88}
+                widths={[140, 280, 420]}
+                sizes="140px"
+                width={140}
+                height={160}
+                loading="lazy"
+                decoding="async"
+              />
+            </span>
+            <div class="post-card__info">
+              <h3 class="post-card__title">{post.title}</h3>
+              <p class="post-card__desc">{post.description}</p>
+            </div>
+            <span class="post-card__author">
+              <Image
+                class="post-card__avatar"
+                src={post.author.avatar}
+                alt=""
+                widths={[50, 100, 150]}
+                sizes="50px"
+                quality={88}
+                width={50}
+                height={50}
+                loading="lazy"
+                decoding="async"
+                format="webp"
+              />
+              <span class="post-card__author-text">
+                <span>{post.author.name}</span>
+                <span class="post-card__role">{post.author.role}</span>
+              </span>
+            </span>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+
+  <a class="pill-button reveal" href="#">Ver mais</a>
+</section>
