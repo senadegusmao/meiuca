@@ -23,7 +23,7 @@ src/
   assets/svg/            ← logos e ícones exportados do Figma
   components/            ← Header, Hero, TenYears, Services, Blog, Footer
   styles/global.css      ← tokens e estilos
-  scripts/main.js        ← animações de scroll, menu, newsletter (~2 KB gzip)
+  scripts/main.js        ← animações de scroll, menu, scroll suave, newsletter (~3 KB gzip)
 public/
   fonts/                 ← Archivo (variável, hospedada no próprio site)
   _headers               ← headers de segurança (Netlify / Cloudflare Pages)
@@ -40,17 +40,21 @@ As animações seguem o vocabulário das duas referências, estudadas quadro a q
 | Módulo | Comportamento |
 |---|---|
 | Intro | Cerca de 2,7s. Fundo preto, as 5 imagens do Hero surgem espalhadas (como no preloader do Aparelho), o logo MEIUCA sobe letra por letra e o contador vai de 0 a 100%. Depois as letras saem para cima e a cortina sobe. É 100% CSS e termina sozinha mesmo sem JavaScript. |
+| Header | Fixo e sempre visível, com `mix-blend-mode: difference` para ficar legível sobre qualquer fundo. |
+| Scroll | Suave na roda do mouse e no trackpad, como o do Prolab (intensidade em `LERP`, no `main.js`). No toque, no teclado e na barra de rolagem o scroll é nativo. |
 | Entrada | Menu e logo entram com blur. A descrição do Hero surge letra por letra. As imagens do marquee sobem de baixo com blur, uma depois da outra. Tudo começa quando a intro sai (`--intro-offset`). |
-| Menu | Estrutura e movimento do menu do meiuca.design: um painel de 672px desce do topo em 0,6s, com o reel em loop à esquerda ("Play reel - 1:32") e os links de 24px à direita. Fundo e hover do joaosena.com: vidro com 10% de branco e blur de 50px, e o link escurece para 40% no hover (150ms). O botão Menu/Fechar ganha a pílula de vidro no hover. Clicar no reel abre o vídeo completo do Vimeo (ID em `reel.vimeoId`, no `content.js`). |
+| Menu | Estrutura e movimento do menu do meiuca.design: um painel de 672px desce do topo em 0,6s, com o reel em loop à esquerda ("Play reel - 1:32") e os links de 24px à direita. Fundo e hover do joaosena.com: vidro com 10% de branco e blur de 50px, e o link escurece para 40% no hover (150ms). O vidro fica parado e é revelado de cima para baixo enquanto o conteúdo desliza, os dois no mesmo quadro (sem falhas no desfoque). O botão Menu ganha a pílula de vidro no hover; o Fechar fica sem caixa. O reel carrega quando o mouse passa no botão Menu e começa a tocar quando o painel termina de descer. Clicar nele abre o vídeo completo do Vimeo (ID em `reel.vimeoId`, no `content.js`). |
 | Hero: imagens | Marquee contínuo da direita para a esquerda, independente do scroll. A velocidade fica em `.marquee__track` (`60s`). |
-| Hero: descrição | Cada palavra acende conforme o scroll. A opacidade inicial fica em `MIN`, em `main.js`. |
+| Hero: descrição | Cada palavra acende conforme o scroll, num degradê de 3 palavras, e o texto inteiro termina de acender antes de sair da tela. A opacidade inicial fica em `MIN`, em `main.js`. |
 | 10 Anos | O scroll fica travado (sticky) e as 7 frases se revezam: as letras da frase atual saem para cima com blur e as da próxima entram de baixo. Rolar `45svh` troca uma frase. O título surge letra por letra. |
 | Serviços | Mesma mecânica do Prolab, medida no site original. São 4 cards sticky de 100vh, com 65px de intervalo e topo em 0, 50, 100 e 150px. Ao longo da seção, cada card encolhe até 0,4, 0,5, 0,6 e 0,7 e sobe 11vh. O título aparece letra por letra quando o card entra na tela. Os cantos são retos. |
 | Insights (Blog) | O título surge letra por letra e os cards sobem com mola. No hover, uma pílula "Ler artigo" segue o cursor (como o "Explore" do Prolab), o fundo dá zoom e a miniatura sobe. O primeiro card usa fundo com desfoque de 80px, como no Figma (`bg: 'soft'` em `content.js`). |
-| Clientes | Lista de clientes em cinza. No hover, o nome acende, um ponto azul (#1474FF) segue o cursor e, se o cliente tiver imagem, a prévia do projeto (240×180) aparece ao lado com uma revelação de cima para baixo. Para incluir prévias dos outros clientes, adicione `image` em `clients`, no `content.js`. |
+| Clientes | Lista de clientes em cinza. No hover, o nome acende e, se o cliente tiver imagem, a prévia do projeto (240×180) aparece ao lado do cursor com uma revelação de cima para baixo. Para incluir prévias dos outros clientes, adicione `image` em `clients`, no `content.js`. |
 | Footer | Os blocos sobem ao entrar na tela e as letras do logo MEIUCA sobem em sequência. |
 
-Quem ativa "reduzir movimento" no sistema não vê a intro e recebe uma versão sem movimento.
+Quem ativa "reduzir movimento" no sistema não vê a intro e recebe uma versão sem movimento (inclusive sem o scroll suave).
+
+**Performance das animações:** quando a entrada termina, as animações são desligadas (classe `is-entered`), e os estados escondidos usam `opacity: 0`. Assim o navegador não mantém uma camada de efeito por letra. No topo da página, o custo caiu de 113 camadas por quadro para 4.
 
 ## Imagens em alta resolução
 

@@ -21,31 +21,76 @@ function initMenu() {
   const preview = menu.querySelector('[data-reel-preview]');
   const modal = document.querySelector('[data-reel-modal]');
   const frame = modal?.querySelector('[data-reel-frame]');
-  let hideTimer;
+  const glass = menu.querySelector('.menu__glass');
+  const panel = menu.querySelector('.menu__panel');
 
+  // Animação do painel: vidro (clip-path) e conteúdo (transform) no mesmo quadro
+  const easeOut = (t) => 1 - Math.pow(1 - t, 3); // = cubic-bezier(0.33, 1, 0.68, 1)
+  const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  let progress = 0; // 0 = fechado, 1 = aberto
+  let anim = 0;
+  const render = (e) => {
+    glass.style.clipPath = `inset(0 0 ${((1 - e) * 100).toFixed(3)}% 0)`;
+    panel.style.transform = `translate3d(0, ${((e - 1) * 100).toFixed(3)}%, 0)`;
+  };
+  const animateTo = (to, done) => {
+    cancelAnimationFrame(anim);
+    const from = progress;
+    const duration = (to ? 600 : 450) * Math.abs(to - from);
+    if (reducedMotion.matches || duration < 1) {
+      progress = to;
+      render(to);
+      done?.();
+      return;
+    }
+    const ease = to ? easeOut : easeInOut;
+    let t0 = 0;
+    const tick = (now) => {
+      t0 ||= now;
+      const t = Math.min(1, (now - t0) / duration);
+      progress = from + (to - from) * ease(t);
+      render(progress);
+      if (t < 1) anim = requestAnimationFrame(tick);
+      else {
+        anim = 0;
+        done?.();
+      }
+    };
+    anim = requestAnimationFrame(tick);
+  };
+
+  // O vídeo começa a carregar quando a pessoa demonstra intenção (hover/foco no
+  // botão), para não disputar rede e decodificação com a animação de abertura.
   const loadPreview = () => {
     if (!preview || preview.dataset.loaded) return;
     preview.querySelectorAll('source[data-src]').forEach((s) => (s.src = s.dataset.src));
     preview.dataset.loaded = '1';
+    preview.preload = 'auto';
     preview.load();
   };
+  toggle.addEventListener('pointerenter', loadPreview, { once: true });
+  toggle.addEventListener('focus', loadPreview, { once: true });
 
   const setOpen = (open) => {
     toggle.setAttribute('aria-expanded', String(open));
     toggle.querySelector('[data-label-open]')?.setAttribute('aria-hidden', String(!open));
     toggle.querySelector('[data-label-closed]')?.setAttribute('aria-hidden', String(open));
+    // Largura da barra de rolagem medida antes de travar (vira padding, sem pulo lateral)
+    if (open) root.style.setProperty('--sbw', `${window.innerWidth - root.clientWidth}px`);
     document.body.classList.toggle('is-locked', open);
-    clearTimeout(hideTimer);
     if (open) {
       menu.hidden = false;
+      menu.classList.add('is-open');
       loadPreview();
-      if (!reducedMotion.matches) preview?.play().catch(() => {});
-      requestAnimationFrame(() => requestAnimationFrame(() => menu.classList.add('is-open')));
+      // O reel só começa a tocar quando o painel termina de descer
+      animateTo(1, () => {
+        if (!reducedMotion.matches) preview?.play().catch(() => {});
+      });
       menu.querySelector('.menu__link')?.focus({ preventScroll: true });
     } else {
       menu.classList.remove('is-open');
       preview?.pause();
-      hideTimer = setTimeout(() => (menu.hidden = true), reducedMotion.matches ? 0 : 600);
+      animateTo(0, () => (menu.hidden = true));
     }
   };
   const isOpen = () => toggle.getAttribute('aria-expanded') === 'true';
@@ -90,52 +135,44 @@ function initMenu() {
 }
 
 /* ---------------------------------------------------------
-   Header: esconde ao rolar para baixo, volta ao rolar para cima
-   --------------------------------------------------------- */
-function initHeader() {
-  const header = document.querySelector('[data-header]');
-  if (!header) return;
-  let lastY = window.scrollY;
-  updaters.push((y) => {
-    if (document.body.classList.contains('is-locked')) return;
-    const goingDown = y > lastY;
-    if (Math.abs(y - lastY) > 4) {
-      header.classList.toggle('is-hidden', goingDown && y > 160);
-      lastY = y;
-    }
-  });
-}
-
-/* ---------------------------------------------------------
    Hero: palavras acendem conforme o scroll (efeito Prolab)
    --------------------------------------------------------- */
 function initScrollWords() {
   const el = document.querySelector('[data-scroll-words]');
   if (!el) return;
   const words = [...el.querySelectorAll('.w')];
+  const last = new Array(words.length).fill(-1);
   const MIN = 0.22;
+  const WAVE = 3; // quantas palavras acendem ao mesmo tempo (degradê)
   let top = 0;
   let height = 0;
+  let headerH = 0;
 
   measurers.push(() => {
     const r = el.getBoundingClientRect();
     top = r.top + window.scrollY;
     height = r.height;
+    headerH = document.querySelector('[data-header]')?.offsetHeight || 0;
   });
 
   updaters.push((y) => {
     if (reducedMotion.matches) return;
-    // Começa a acender no primeiro movimento do scroll e termina quando
-    // o texto chega a ~15% do topo da tela.
-    const start = Math.max(0, top - vh * 0.85);
-    const end = Math.max(start + vh * 0.35, top + height - vh * 0.15);
+    // Começa no primeiro movimento do scroll e termina antes de o texto sair da
+    // tela: quando o fim dele chega à metade da tela ou, no máximo, quando o
+    // topo dele encosta no header. Assim o texto inteiro acende ainda visível.
+    const start = Math.max(0, top - vh * 0.9);
+    const visibleUntil = Math.max(start + 80, top - headerH);
+    const end = Math.max(top + height - vh * 0.5, Math.min(start + vh * 0.3, visibleUntil));
     const p = clamp((y - start) / (end - start));
-    const span = words.length;
-    words.forEach((w, i) => {
-      const local = clamp(p * (span + 3) - i, 0, 1);
-      const a = MIN + (1 - MIN) * local;
-      w.style.setProperty('--a', a.toFixed(3));
-    });
+    const n = words.length;
+    for (let i = 0; i < n; i++) {
+      const local = clamp((p * (n + WAVE) - i) / WAVE);
+      const a = Math.round((MIN + (1 - MIN) * local) * 100);
+      if (a !== last[i]) {
+        last[i] = a;
+        words[i].style.setProperty('--a', (a / 100).toFixed(2));
+      }
+    }
   });
 }
 
@@ -174,8 +211,11 @@ function initPhrases() {
     if (count) count.textContent = String(next + 1).padStart(2, '0');
   };
 
+  let lastP = -1;
   updaters.push((y) => {
     const p = clamp((y - top) / distance);
+    if (p === lastP) return; // fora da seção: nada muda
+    lastP = p;
     const idx = Math.min(phrases.length - 1, Math.floor(p * phrases.length));
     show(idx);
     if (bar) bar.style.transform = `scaleX(${p.toFixed(4)})`;
@@ -235,12 +275,17 @@ function initStack() {
     range = Math.max(1, stack.offsetHeight);
   });
 
+  let lastKey = '';
   updaters.push((y) => {
     if (reducedMotion.matches) {
       cards.forEach((c) => (c.style.transform = ''));
       return;
     }
     const p = clamp((y - top) / range);
+    // Fora da seção (antes ou depois), não reescreve nada
+    const key = `${p.toFixed(4)}|${vh}`;
+    if (key === lastKey) return;
+    lastKey = key;
     const ty = -(vh / 9) * p; // 100px numa tela de 900px
     cards.forEach((card, i) => {
       const endScale = Math.min(0.9, 0.4 + 0.1 * i);
@@ -319,8 +364,8 @@ function initCursorPill() {
 }
 
 /* ---------------------------------------------------------
-   Clientes: ponto azul segue o cursor; o nome acende e,
-   se o cliente tiver imagem, a prévia aparece ao lado
+   Clientes: o nome acende e, se o cliente tiver imagem,
+   a prévia aparece ao lado do cursor
    --------------------------------------------------------- */
 function initClients() {
   const section = document.querySelector('[data-clients]');
@@ -353,12 +398,8 @@ function initClients() {
     cx = x = e.clientX;
     cy = y = e.clientY;
     follow();
-    section.classList.add('is-hovering');
   });
-  list.addEventListener('pointerleave', () => {
-    section.classList.remove('is-hovering');
-    show(null);
-  });
+  list.addEventListener('pointerleave', () => show(null));
   list.addEventListener(
     'pointermove',
     (e) => {
@@ -370,6 +411,76 @@ function initClients() {
     },
     { passive: true },
   );
+}
+
+/* ---------------------------------------------------------
+   Marquee do Hero: pausa quando sai da tela
+   --------------------------------------------------------- */
+function initMarquee() {
+  const marquee = document.querySelector('[data-marquee]');
+  if (!marquee || !('IntersectionObserver' in window)) return;
+  new IntersectionObserver(([e]) => marquee.classList.toggle('is-paused', !e.isIntersecting)).observe(marquee);
+}
+
+/* ---------------------------------------------------------
+   Scroll suave na roda do mouse (como o Lenis do Prolab,
+   intensidade 10). Só em mouse/trackpad: no toque, teclado
+   e barra de rolagem o scroll continua nativo.
+   --------------------------------------------------------- */
+let smoothing = false;
+function initSmoothScroll() {
+  const LERP = 0.1; // fração do caminho percorrida a cada quadro de 60 Hz
+  if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+  let target = window.scrollY;
+  let current = target;
+  let raf = 0;
+  let lastT = 0;
+  const maxScroll = () => document.documentElement.scrollHeight - window.innerHeight;
+
+  const step = (now) => {
+    const dt = lastT ? Math.min(64, now - lastT) : 16.7;
+    lastT = now;
+    current += (target - current) * (1 - Math.pow(1 - LERP, dt / 16.667));
+    if (Math.abs(target - current) < 0.5) current = target;
+    window.scrollTo(0, current);
+    update(); // efeitos ligados ao scroll no mesmo quadro
+    if (current === target) {
+      raf = 0;
+      lastT = 0;
+      smoothing = false;
+    } else {
+      raf = requestAnimationFrame(step);
+    }
+  };
+  const stop = () => {
+    if (raf) cancelAnimationFrame(raf);
+    raf = 0;
+    lastT = 0;
+    smoothing = false;
+    current = target = window.scrollY;
+  };
+
+  window.addEventListener(
+    'wheel',
+    (e) => {
+      if (reducedMotion.matches || e.ctrlKey || e.defaultPrevented) return;
+      if (document.body.classList.contains('is-locked')) return;
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      e.preventDefault();
+      if (!raf) current = target = window.scrollY;
+      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1;
+      target = clamp(target + e.deltaY * unit, 0, maxScroll());
+      if (!raf) {
+        smoothing = true;
+        raf = requestAnimationFrame(step);
+      }
+    },
+    { passive: false },
+  );
+  // Teclado, clique (barra de rolagem, âncoras) e redimensionamento interrompem e sincronizam
+  window.addEventListener('keydown', stop);
+  window.addEventListener('pointerdown', stop);
+  window.addEventListener('resize', stop);
 }
 
 /* ---------------------------------------------------------
@@ -407,6 +518,22 @@ function initNewsletter() {
 }
 
 /* ---------------------------------------------------------
+   Fim da entrada: quando todas as animações de entrada (e a intro)
+   terminam, elas são desligadas. Uma animação "parada no fim"
+   (fill-mode) continua custando: o navegador mantém uma camada de
+   efeito por letra/imagem. Visualmente nada muda.
+   --------------------------------------------------------- */
+function initEntryCleanup() {
+  if (!document.getAnimations) return;
+  requestAnimationFrame(() => {
+    const entering = document
+      .getAnimations()
+      .filter((a) => a.effect?.target?.closest?.('.enter, .enter-char, .enter-rise, .intro'));
+    Promise.allSettled(entering.map((a) => a.finished)).then(() => root.classList.add('is-entered'));
+  });
+}
+
+/* ---------------------------------------------------------
    Loop
    --------------------------------------------------------- */
 let ticking = false;
@@ -420,6 +547,7 @@ const update = () => {
   updaters.forEach((u) => u(y));
 };
 const requestUpdate = () => {
+  if (smoothing) return; // o scroll suave já atualiza a cada quadro
   if (!ticking) {
     ticking = true;
     requestAnimationFrame(update);
@@ -427,14 +555,16 @@ const requestUpdate = () => {
 };
 
 initMenu();
-initHeader();
 initScrollWords();
 initPhrases();
 initStack();
 initReveal();
 initCursorPill();
 initClients();
+initMarquee();
 initNewsletter();
+initSmoothScroll();
+initEntryCleanup();
 
 measure();
 update();

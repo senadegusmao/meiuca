@@ -14,7 +14,9 @@ Responda sempre em português (pt-BR). O dono do projeto é o João Sena, design
 
 - **Responsivo:** desktop (1440 é o tamanho do Figma) e celular (390), sem rolagem horizontal.
 - **Seguro:** CSP estrita sem `unsafe-inline` (nada de `<script>`/`<style>` inline nem atributos `style=` no HTML; estilos dinâmicos só via `element.style` no JS). Headers em `public/_headers` (Netlify/Cloudflare) e `vercel.json`. A única origem externa liberada é `frame-src https://player.vimeo.com`, para o reel. Mantenha o `npm audit` zerado.
-- **Performance:** JS ~2 KB e CSS ~7 KB (gzip). Imagens via `<Picture>` do Astro (AVIF/WebP/JPG com `srcset`). O reel do menu só carrega quando o menu abre.
+- **Performance:** JS ~3 KB e CSS ~7 KB (gzip). Imagens via `<Picture>` do Astro (AVIF/WebP/JPG com `srcset`). O reel do menu só carrega quando a pessoa passa o mouse no botão Menu (ou abre o menu).
+  - Cada elemento com `filter` (blur) vira uma camada extra a cada quadro. Por isso: estados escondidos usam `opacity: 0` (nunca `0.001`, que obriga o navegador a desenhar a camada); as animações de entrada são desligadas quando terminam (classe `is-entered` no `<html>`, em `initEntryCleanup`); e nunca anime `transform` num elemento com `backdrop-filter`.
+  - Medição de referência (Chromium, scroll no topo da página): 4 camadas de efeito por quadro. Antes da limpeza eram 113 a 166.
 - **Imagens em alta resolução:** é um estúdio de design, a qualidade tem que ser excelente. Exporte do Figma em 3x, ou use os originais pelo `download_assets` do MCP do Figma. Os originais de Serviços chegam a 4080px. Nunca use capturas em 1x.
 - **Fonte:** Archivo (variável, hospedada em `public/fonts`). O Figma usa Neue Haas em alguns textos, mas a decisão foi usar Archivo em tudo.
 - **Acessibilidade:** `prefers-reduced-motion` desliga a intro e os movimentos. Texto partido em letras tem cópia `visually-hidden` para leitores de tela.
@@ -26,15 +28,18 @@ Responda sempre em português (pt-BR). O dono do projeto é o João Sena, design
   - A pedido do João, Serviços **não** tem cantos arredondados, número nem linha: só o título, alinhado à direita, com 32px de margem.
 - **Aparelho** (https://aparelho.studio/): marquee contínuo de imagens no Hero (sem interação com o scroll), imagens subindo com blur na entrada, preloader com imagens espalhadas.
 - **meiuca.design**: estrutura e comportamento do **menu aberto**. Painel de 672px que desce do topo em 0,6s (`cubic-bezier(0.33,1,0.68,1)`), reel em loop à esquerda (326×270, "Play reel - 1:32") e links de 24px em linhas de 48px à direita. O reel completo é o Vimeo `1059077959`, que só pode ser incorporado em meiuca.design.
-- **joaosena.com**: **fundo e hover** do menu. Vidro com `rgba(255,255,255,.10)` e `backdrop-filter: blur(50px)`. No hover, o link vai para `rgba(255,255,255,.4)` em 150ms. Pílula de vidro no botão Menu/Fechar.
+- **joaosena.com**: **fundo e hover** do menu. Vidro com `rgba(255,255,255,.10)` e `backdrop-filter: blur(50px)`. No hover, o link vai para `rgba(255,255,255,.4)` em 150ms. Pílula de vidro no hover do botão Menu. O "Fechar" fica **sem caixa** (pedido do João); no hover, só o texto escurece.
 
 ## Comportamento atual por módulo
 
 - **Intro** (~2,7s, CSS puro): imagens espalhadas, logo MEIUCA letra por letra, contador de 0 a 100% e a cortina sobe. `--intro-offset` sincroniza a entrada do resto do site.
-- **Hero:** padding e gap de 256px (Figma). A descrição surge letra por letra e depois cada palavra acende com o scroll. O marquee é CSS puro (60s).
+- **Header:** fixo, sempre visível (pedido do João). Usa `mix-blend-mode: difference` para ficar legível sobre qualquer fundo.
+- **Scroll suave:** na roda do mouse/trackpad, como o Lenis do Prolab (`LERP = 0.1` em `initSmoothScroll`). Toque, teclado e barra de rolagem continuam nativos; `prefers-reduced-motion` desliga.
+- **Hero:** padding e gap de 256px (Figma). A descrição (texto do Figma) surge letra por letra em ~1,2s e depois cada palavra acende com o scroll, num degradê de 3 palavras. O texto inteiro termina de acender antes de sair da tela: quando o fim dele chega à metade da tela ou, no máximo, quando o topo encosta no header (desktop: ~256px de scroll; celular: ~120px). O marquee é CSS puro (60s) e pausa fora da tela.
+- **Menu:** o vidro fica parado e é revelado de cima para baixo com `clip-path`; o conteúdo desliza com `transform`. Os dois são animados no mesmo loop de JS (`animateTo` em `initMenu`), então nunca se descolam. Abrir: 0,6s (`easeOutCubic`, a curva do meiuca.design). Fechar: 0,45s. Ao travar o scroll, a largura da barra de rolagem vira `padding` (`--sbw`) para a página não pular. O reel começa a tocar quando o painel termina de descer.
 - **10 Anos:** sticky. As 7 frases trocam com o scroll (45svh por frase), letra por letra com blur, e há um contador de 01 a 07.
 - **Insights:** o card 1 usa fundo com blur de 80px (`bg: 'soft'`). No hover, a pílula "Ler artigo" segue o cursor.
-- **Clientes:** o nome acende no hover, um ponto azul `#1474FF` segue o cursor e a prévia do projeto (240×180) aparece se o cliente tiver `image`. Hoje só o Mude tem imagem.
+- **Clientes:** o nome acende no hover e a prévia do projeto (240×180) segue o cursor se o cliente tiver `image`. Hoje só o Mude tem imagem. O ponto azul do Figma foi removido a pedido do João.
 - **Footer:** newsletter (só validação, sem envio), links e logo gigante com letras subindo.
 
 ## Pendências

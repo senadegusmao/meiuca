@@ -4,6 +4,9 @@ import { heroText, heroImages } from '../data/content.js';
 import { splitText } from '../lib/split.js';
 
 const words = splitText(heroText);
+// A entrada letra por letra dura ~1,2s qualquer que seja o tamanho do texto.
+const total = words.reduce((n, w) => n + w.chars.length, 0);
+const step = Math.min(0.85, 100 / total);
 
 // Medidas do Figma (px). As imagens são geradas em vários tamanhos até 3x.
 const sizes = { a: [300, 400], b: [250, 333], c: [280, 373] };
@@ -19,7 +22,7 @@ const group = [...heroImages, ...heroImages];
       words.map((w) => (
         <>
           <span class="w split-word">
-            {w.chars.map((c) => <span class={`enter-char d2 cd${Math.round(c.i * 0.85)}`}>{c.ch}</span>)}
+            {w.chars.map((c) => <span class={`enter-char d2 cd${Math.round(c.i * step)}`}>{c.ch}</span>)}
           </span>{' '}
         </>
       ))
