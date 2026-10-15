@@ -1,0 +1,53 @@
+---
+import { getImage } from 'astro:assets';
+import reelPoster from '../assets/images/reel-poster.png';
+import { reel } from '../data/content.js';
+import { withBase } from '../lib/url.js';
+
+// Reel fixo no canto inferior direito (comportamento do mouthwash.studio/studio):
+// pequeno, em loop e sem som; dá para arrastar (volta sozinho para o canto) e,
+// ao clicar, ele cresce até o centro da tela. Em meiuca.design o vídeo completo
+// do Vimeo entra por cima; nos outros endereços, a prévia em alta.
+const posterSmall = await getImage({ src: reelPoster, width: 480, format: 'webp', quality: 80 });
+const posterLarge = await getImage({ src: reelPoster, width: 1280, format: 'webp', quality: 82 });
+---
+
+<div class="reel" data-reel data-vimeo-id={reel.vimeoId} data-poster-large={posterLarge.src}>
+  <div class="reel__scrim" data-reel-close aria-hidden="true"></div>
+
+  <div class="reel__player enter d20" data-reel-player>
+    <div class="reel__frame" data-reel-frame>
+      <video
+        muted
+        loop
+        playsinline
+        preload="none"
+        poster={posterSmall.src}
+        aria-hidden="true"
+        tabindex="-1"
+        data-reel-video
+      >
+        <source data-src={withBase('/media/reel-mini.webm')} type="video/webm" />
+        <source data-src={withBase('/media/reel-mini.mp4')} type="video/mp4" />
+      </video>
+      <template data-reel-large>
+        <video muted loop playsinline preload="auto" aria-hidden="true" tabindex="-1" class="reel__upgrade">
+          <source src={withBase('/media/reel-preview.webm')} type="video/webm" />
+          <source src={withBase('/media/reel-preview.mp4')} type="video/mp4" />
+        </video>
+      </template>
+    </div>
+    <button
+      class="reel__hit"
+      type="button"
+      aria-label={`Assistir ao reel da Meiuca (${reel.duration})`}
+      aria-haspopup="dialog"
+      data-reel-open
+    ></button>
+    <p class="reel__title" aria-hidden="true">{reel.title} · {reel.duration}</p>
+  </div>
+
+  <div class="reel__dialog" role="dialog" aria-modal="true" aria-label="Reel da Meiuca" hidden data-reel-dialog>
+    <button class="reel__close" type="button" data-reel-close>Fechar</button>
+  </div>
+</div>

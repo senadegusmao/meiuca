@@ -16,8 +16,8 @@ const group = [...heroImages, ...heroImages];
 ---
 
 <section class="hero" aria-label="Apresentação">
-  <!-- Entrada: letra por letra com blur (Prolab). Depois, cada palavra acende com o scroll. -->
-  <h1 class="hero__desc" data-scroll-words>
+  <!-- Entrada: letra por letra com blur (Prolab), repetida quando o texto volta à tela. Cada palavra acende com o scroll. -->
+  <h1 class="hero__desc" data-scroll-words data-replay>
     <span class="visually-hidden">{heroText}</span><span aria-hidden="true">{
       words.map((w) => (
         <>
@@ -30,7 +30,7 @@ const group = [...heroImages, ...heroImages];
   </h1>
 
   <!-- Marquee contínuo (Aparelho): as imagens sobem de baixo com blur, em sequência -->
-  <div class="marquee" data-marquee>
+  <div class="marquee" data-marquee data-replay>
     <div class="marquee__track">
       {
         [0, 1].map((copy) => (

@@ -12,15 +12,64 @@ const updaters = [];
 const measurers = [];
 
 /* ---------------------------------------------------------
-   Menu (estrutura do meiuca.design) + reel
+   Trava da página (menu aberto): nada pode se mexer embaixo
+   do vidro. Para o scroll suave na hora, bloqueia roda e toque
+   (exceto dentro do menu, se ele tiver rolagem, no celular),
+   desliga o "elástico" do trackpad e pausa o marquee (via CSS).
+   A largura da barra de rolagem vira padding (--sbw): sem pulo lateral.
+   --------------------------------------------------------- */
+let stopSmooth = () => {};
+// O menu conversa com o reel fixo (esconder ao abrir, abrir a partir do reel do menu)
+let reelApi = null;
+const canScrollInside = (target) => {
+  const box = target instanceof Element ? target.closest('.menu__grid') : null;
+  return !!box && box.scrollHeight > box.clientHeight;
+};
+const blockScroll = (e) => {
+  if (!canScrollInside(e.target)) e.preventDefault();
+};
+const scrollKeys = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ']);
+const blockKeys = (e) => {
+  if (scrollKeys.has(e.key) && !e.target.closest?.('input, textarea, button, [contenteditable]')) e.preventDefault();
+};
+const locks = new Set();
+const noBlend = new Set();
+// O mix-blend-mode do header quebra o desfoque de qualquer vidro (backdrop-filter)
+// no Chrome (aparecem retângulos nítidos). Menu e reel abertos o desligam.
+function setNoBlend(on, key) {
+  if (on) noBlend.add(key);
+  else noBlend.delete(key);
+  root.classList.toggle('no-blend', noBlend.size > 0);
+}
+function lockPage(on, key = 'menu') {
+  const was = locks.size > 0;
+  if (on) locks.add(key);
+  else locks.delete(key);
+  on = locks.size > 0;
+  if (on === was) return;
+  if (on) {
+    stopSmooth();
+    root.style.setProperty('--sbw', `${window.innerWidth - root.clientWidth}px`);
+    window.addEventListener('wheel', blockScroll, { passive: false });
+    window.addEventListener('touchmove', blockScroll, { passive: false });
+    window.addEventListener('keydown', blockKeys);
+  } else {
+    window.removeEventListener('wheel', blockScroll);
+    window.removeEventListener('touchmove', blockScroll);
+    window.removeEventListener('keydown', blockKeys);
+  }
+  root.classList.toggle('is-locked', on);
+  document.body.classList.toggle('is-locked', on);
+}
+
+/* ---------------------------------------------------------
+   Menu (estrutura do meiuca.design)
    --------------------------------------------------------- */
 function initMenu() {
   const toggle = document.querySelector('[data-menu-toggle]');
   const menu = document.querySelector('[data-menu]');
   if (!toggle || !menu) return;
   const preview = menu.querySelector('[data-reel-preview]');
-  const modal = document.querySelector('[data-reel-modal]');
-  const frame = modal?.querySelector('[data-reel-frame]');
   const glass = menu.querySelector('.menu__glass');
   const panel = menu.querySelector('.menu__panel');
 
@@ -29,12 +78,24 @@ function initMenu() {
   const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
   let progress = 0; // 0 = fechado, 1 = aberto
   let anim = 0;
+  // O vidro cresce em altura (sem clip-path nem transform: os dois atrapalham o
+  // backdrop-filter). Aberto por completo, os estilos inline saem e vale o CSS.
+  let panelH = 0;
   const render = (e) => {
-    glass.style.clipPath = `inset(0 0 ${((1 - e) * 100).toFixed(3)}% 0)`;
+    const open = e >= 1;
+    menu.classList.toggle('is-settled', open);
+    if (open) {
+      glass.style.height = '';
+      panel.style.transform = '';
+      return;
+    }
+    panelH ||= panel.offsetHeight;
+    glass.style.height = `${(panelH * e).toFixed(2)}px`;
     panel.style.transform = `translate3d(0, ${((e - 1) * 100).toFixed(3)}%, 0)`;
   };
   const animateTo = (to, done) => {
     cancelAnimationFrame(anim);
+    panelH = panel.offsetHeight;
     const from = progress;
     const duration = (to ? 600 : 450) * Math.abs(to - from);
     if (reducedMotion.matches || duration < 1) {
@@ -59,8 +120,8 @@ function initMenu() {
     anim = requestAnimationFrame(tick);
   };
 
-  // O vídeo começa a carregar quando a pessoa demonstra intenção (hover/foco no
-  // botão), para não disputar rede e decodificação com a animação de abertura.
+  // O vídeo do menu começa a carregar quando a pessoa demonstra intenção (hover/foco
+  // no botão), para não disputar rede e decodificação com a animação de abertura.
   const loadPreview = () => {
     if (!preview || preview.dataset.loaded) return;
     preview.querySelectorAll('source[data-src]').forEach((s) => (s.src = s.dataset.src));
@@ -75,14 +136,14 @@ function initMenu() {
     toggle.setAttribute('aria-expanded', String(open));
     toggle.querySelector('[data-label-open]')?.setAttribute('aria-hidden', String(!open));
     toggle.querySelector('[data-label-closed]')?.setAttribute('aria-hidden', String(open));
-    // Largura da barra de rolagem medida antes de travar (vira padding, sem pulo lateral)
-    if (open) root.style.setProperty('--sbw', `${window.innerWidth - root.clientWidth}px`);
-    document.body.classList.toggle('is-locked', open);
+    lockPage(open, 'menu');
     if (open) {
+      setNoBlend(true, 'menu');
+      reelApi?.setAway(true); // o reel do canto desce e sai da tela
       menu.hidden = false;
       menu.classList.add('is-open');
       loadPreview();
-      // O reel só começa a tocar quando o painel termina de descer
+      // O reel do menu só começa a tocar quando o painel termina de descer
       animateTo(1, () => {
         if (!reducedMotion.matches) preview?.play().catch(() => {});
       });
@@ -90,48 +151,300 @@ function initMenu() {
     } else {
       menu.classList.remove('is-open');
       preview?.pause();
-      animateTo(0, () => (menu.hidden = true));
+      animateTo(0, () => {
+        menu.hidden = true;
+        setNoBlend(false, 'menu');
+        reelApi?.setAway(false); // e volta quando o menu termina de fechar
+      });
     }
   };
   const isOpen = () => toggle.getAttribute('aria-expanded') === 'true';
 
-  const openReel = () => {
-    if (!modal || !frame) return;
-    const id = frame.dataset.vimeoId;
-    const iframe = document.createElement('iframe');
-    iframe.src = `https://player.vimeo.com/video/${id}?autoplay=1&dnt=1&title=0&byline=0&portrait=0`;
-    iframe.title = 'Reel da Meiuca';
-    iframe.allow = 'autoplay; fullscreen; picture-in-picture';
-    iframe.referrerPolicy = 'strict-origin-when-cross-origin';
-    frame.replaceChildren(iframe);
-    modal.hidden = false;
-    preview?.pause();
-    modal.querySelector('.reel-modal__close')?.focus();
-  };
-  const closeReel = () => {
-    if (!modal || modal.hidden) return;
-    modal.hidden = true;
-    frame.replaceChildren(); // remove o player e para o áudio
-    if (isOpen() && !reducedMotion.matches) preview?.play().catch(() => {});
-    menu.querySelector('[data-reel-open]')?.focus();
-  };
-
   toggle.addEventListener('click', () => setOpen(!isOpen()));
   menu.addEventListener('click', (e) => {
     if (e.target.closest('[data-menu-link]') || e.target.closest('[data-menu-dismiss]')) setOpen(false);
-    if (e.target.closest('[data-reel-open]')) openReel();
-  });
-  modal?.addEventListener('click', (e) => {
-    if (e.target.closest('[data-reel-close]')) closeReel();
+    const media = e.target.closest('[data-menu-reel]');
+    if (media) reelApi?.openFrom(media, preview);
   });
   document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape') return;
-    if (modal && !modal.hidden) return closeReel();
+    if (e.key !== 'Escape' || e.defaultPrevented) return;
     if (isOpen()) {
       setOpen(false);
       toggle.focus();
     }
   });
+}
+
+/* ---------------------------------------------------------
+   Reel fixo no canto inferior direito (mouthwash.studio/studio)
+   - pequeno, em loop e sem som; carrega depois da página
+   - dá para arrastar e ele volta para o canto com uma mola
+   - ao clicar, cresce até o centro (FLIP) com o fundo desfocado;
+     em meiuca.design entra o vídeo completo do Vimeo, nos outros
+     endereços a prévia em alta
+   --------------------------------------------------------- */
+function initReel() {
+  const el = document.querySelector('[data-reel]');
+  if (!el) return;
+  const player = el.querySelector('[data-reel-player]');
+  const frame = el.querySelector('[data-reel-frame]');
+  const video = el.querySelector('[data-reel-video]');
+  const hit = el.querySelector('[data-reel-open]');
+  const dialog = el.querySelector('[data-reel-dialog]');
+  const closeBtn = dialog.querySelector('[data-reel-close]');
+  const largeTpl = el.querySelector('[data-reel-large]');
+  const onMeiuca = /(^|\.)meiuca\.design$/.test(location.hostname);
+  let full = false;
+  let upgrade = null;
+  let origin = null; // elemento de onde o reel abriu (o reel do menu), ou null (canto)
+
+  // Prévia pequena: só carrega depois que a página terminou de carregar
+  const play = () => {
+    if (!reducedMotion.matches && !document.hidden) video.play().catch(() => {});
+  };
+  const loadMini = () => {
+    if (video.dataset.loaded) return;
+    video.dataset.loaded = '1';
+    video.querySelectorAll('source[data-src]').forEach((s) => (s.src = s.dataset.src));
+    video.preload = 'auto';
+    video.load();
+    play();
+  };
+  const later = () => setTimeout(loadMini, 1200);
+  if (document.readyState === 'complete') later();
+  else window.addEventListener('load', later, { once: true });
+  document.addEventListener('visibilitychange', () => (document.hidden ? video.pause() : !upgrade && play()));
+
+  // Arrastar: segue o dedo/mouse e volta para o canto com uma mola (e o "arremesso")
+  let dx = 0;
+  let dy = 0;
+  let vx = 0;
+  let vy = 0;
+  let spring = 0;
+  let drag = null;
+  const setOffset = () => (player.style.translate = dx || dy ? `${dx.toFixed(1)}px ${dy.toFixed(1)}px` : '');
+  const springBack = () => {
+    cancelAnimationFrame(spring);
+    if (reducedMotion.matches) {
+      dx = dy = vx = vy = 0;
+      return setOffset();
+    }
+    let prev = 0;
+    const W = 8; // rigidez
+    const Z = 0.7; // amortecimento (um leve balanço)
+    const step = (now) => {
+      const dt = prev ? Math.min(0.032, (now - prev) / 1000) : 1 / 60;
+      prev = now;
+      vx += (-W * W * dx - 2 * Z * W * vx) * dt;
+      vy += (-W * W * dy - 2 * Z * W * vy) * dt;
+      dx += vx * dt;
+      dy += vy * dt;
+      if (Math.hypot(dx, dy) < 0.3 && Math.hypot(vx, vy) < 8) {
+        dx = dy = vx = vy = 0;
+        spring = 0;
+        return setOffset();
+      }
+      setOffset();
+      spring = requestAnimationFrame(step);
+    };
+    spring = requestAnimationFrame(step);
+  };
+
+  hit.addEventListener('pointerdown', (e) => {
+    if (full || e.button !== 0) return;
+    cancelAnimationFrame(spring);
+    hit.setPointerCapture(e.pointerId);
+    drag = { x: e.clientX - dx, y: e.clientY - dy, sx: e.clientX, sy: e.clientY, t: performance.now(), moved: false };
+    vx = vy = 0;
+  });
+  hit.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    if (!drag.moved && Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) > 5) {
+      drag.moved = true;
+      player.classList.add('is-dragging');
+    }
+    if (!drag.moved) return;
+    const now = performance.now();
+    const ndx = e.clientX - drag.x;
+    const ndy = e.clientY - drag.y;
+    const dt = Math.max(1, now - drag.t) / 1000;
+    // velocidade suavizada, para o arremesso ao soltar
+    vx = vx * 0.6 + ((ndx - dx) / dt) * 0.4;
+    vy = vy * 0.6 + ((ndy - dy) / dt) * 0.4;
+    drag.t = now;
+    dx = ndx;
+    dy = ndy;
+    setOffset();
+  });
+  const release = (e) => {
+    if (!drag) return;
+    const wasDrag = drag.moved;
+    drag = null;
+    player.classList.remove('is-dragging');
+    if (hit.hasPointerCapture?.(e.pointerId)) hit.releasePointerCapture(e.pointerId);
+    if (!wasDrag && e.type === 'pointerup') open();
+    else {
+      const max = 3000;
+      vx = clamp(vx, -max, max);
+      vy = clamp(vy, -max, max);
+      springBack();
+    }
+  };
+  hit.addEventListener('pointerup', release);
+  hit.addEventListener('pointercancel', release);
+  // Teclado (Enter/Espaço geram click sem ponteiro)
+  hit.addEventListener('click', (e) => {
+    if (e.detail === 0) open();
+  });
+
+  // FLIP: mede antes e depois de trocar o layout e anima a diferença.
+  // A escala vem da largura; o centro do vídeo coincide com o centro de `rect`.
+  const toRect = (rect, cur) => {
+    const s = rect.width / cur.width;
+    const x = rect.left + rect.width / 2 - (cur.left + (cur.width * s) / 2);
+    const y = rect.top + rect.height / 2 - (cur.top + (cur.height * s) / 2);
+    return `translate(${x}px, ${y}px) scale(${s})`;
+  };
+  const flip = (first, duration, easing) => {
+    const last = player.getBoundingClientRect();
+    if (reducedMotion.matches || !player.animate) return Promise.resolve();
+    return player
+      .animate([{ transform: toRect(first, last) }, { transform: 'none' }], { duration, easing })
+      .finished.catch(() => {});
+  };
+  const shrinkTo = (rect, duration, easing) => {
+    if (reducedMotion.matches || !player.animate) return Promise.resolve(null);
+    const cur = player.getBoundingClientRect();
+    const a = player.animate([{ transform: 'none' }, { transform: toRect(rect, cur) }], {
+      duration,
+      easing,
+      fill: 'forwards',
+    });
+    return a.finished.then(() => a).catch(() => a);
+  };
+
+  const loadUpgrade = () => {
+    if (upgrade || !full) return;
+    if (onMeiuca) {
+      upgrade = document.createElement('iframe');
+      upgrade.src = `https://player.vimeo.com/video/${el.dataset.vimeoId}?autoplay=1&dnt=1&title=0&byline=0&portrait=0`;
+      upgrade.title = 'Reel da Meiuca';
+      upgrade.allow = 'autoplay; fullscreen; picture-in-picture';
+      upgrade.referrerPolicy = 'strict-origin-when-cross-origin';
+      upgrade.className = 'reel__upgrade';
+      upgrade.addEventListener('load', () => upgrade?.classList.add('is-ready'), { once: true });
+    } else {
+      upgrade = largeTpl.content.firstElementChild.cloneNode(true);
+      upgrade.poster = el.dataset.posterLarge;
+      upgrade.addEventListener(
+        'canplay',
+        () => {
+          upgrade?.play().catch(() => {});
+          upgrade?.classList.add('is-ready');
+        },
+        { once: true },
+      );
+    }
+    frame.appendChild(upgrade);
+  };
+
+  let anim = Promise.resolve();
+  const open = (from = null, src = null) => {
+    if (full) return;
+    full = true;
+    origin = from;
+    el.classList.remove('is-leaving');
+    cancelAnimationFrame(spring);
+    if (src && !src.paused) {
+      // continua o vídeo do mesmo ponto em que estava no menu
+      loadMini();
+      try {
+        video.currentTime = src.currentTime;
+      } catch {}
+    }
+    const first = (from || player).getBoundingClientRect();
+    dx = dy = vx = vy = 0;
+    setOffset();
+    lockPage(true, 'reel');
+    setNoBlend(true, 'reel');
+    // Sem as transições de "sair da frente": se o reel estava escondido (menu
+    // aberto), ele aparece inteiro na hora e a animação vem só do FLIP
+    el.classList.add('no-trans', 'is-full');
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.remove('no-trans')));
+    hit.tabIndex = -1;
+    dialog.hidden = false;
+    closeBtn.focus({ preventScroll: true });
+    anim = flip(first, 650, 'cubic-bezier(0.22, 1, 0.36, 1)').then(() => {
+      if (!full) return;
+      el.classList.add('is-settled');
+      loadUpgrade();
+    });
+  };
+  const close = () => {
+    if (!full) return;
+    full = false;
+    upgrade?.remove(); // para o vídeo/áudio na hora
+    upgrade = null;
+    play();
+    dialog.hidden = true;
+    lockPage(false, 'reel');
+    el.classList.remove('is-settled');
+    const back = origin && origin.isConnected && origin.getClientRects().length ? origin : null;
+    origin = null;
+    hit.tabIndex = 0;
+    if (back) {
+      // Abriu pelo menu: volta para o reel do menu e só então some
+      el.classList.add('is-leaving'); // o fundo desfocado já começa a sumir
+      back.focus({ preventScroll: true });
+      anim = shrinkTo(back.getBoundingClientRect(), 550, 'cubic-bezier(0.65, 0, 0.35, 1)').then((a) => {
+        if (full) return;
+        el.classList.add('no-trans');
+        el.classList.remove('is-full', 'is-leaving');
+        a?.cancel();
+        requestAnimationFrame(() => el.classList.remove('no-trans'));
+        setNoBlend(false, 'reel');
+      });
+      return;
+    }
+    const first = player.getBoundingClientRect();
+    el.classList.remove('is-full');
+    el.classList.add('is-closing');
+    hit.focus({ preventScroll: true });
+    anim = flip(first, 550, 'cubic-bezier(0.65, 0, 0.35, 1)').then(() => {
+      if (full) return;
+      el.classList.remove('is-closing');
+      setNoBlend(false, 'reel');
+    });
+  };
+
+  reelApi = {
+    setAway: (on) => el.classList.toggle('is-away', on),
+    openFrom: (from, src) => open(from, src),
+  };
+
+  el.addEventListener('click', (e) => {
+    if (e.target.closest('[data-reel-close]')) close();
+  });
+  // Em Serviços o título dos cards fica no canto inferior direito: o reel
+  // desce e sai da frente enquanto os cards estão na tela
+  const stack = document.querySelector('[data-stack]');
+  if (stack && 'IntersectionObserver' in window) {
+    // só a faixa de baixo da tela conta (onde o reel fica)
+    new IntersectionObserver(([e]) => el.classList.toggle('is-tucked', e.isIntersecting), {
+      rootMargin: '-80% 0px 0px 0px',
+    }).observe(stack);
+  }
+  // Esc fecha o reel antes do menu
+  window.addEventListener(
+    'keydown',
+    (e) => {
+      if (e.key === 'Escape' && full) {
+        e.preventDefault();
+        close();
+      }
+    },
+    true,
+  );
 }
 
 /* ---------------------------------------------------------
@@ -182,13 +495,12 @@ function initScrollWords() {
 function initPhrases() {
   const section = document.querySelector('[data-phrases]');
   if (!section) return;
+  const text = section.querySelector('[data-phrase-text]');
   const phrases = [...section.querySelectorAll('[data-phrase]')];
-  const count = section.querySelector('[data-phrase-count]');
-  const bar = section.querySelector('[data-phrase-bar]');
 
   let top = 0;
   let distance = 1;
-  let current = 0;
+  let current = -1;
 
   measurers.push(() => {
     const r = section.getBoundingClientRect();
@@ -199,26 +511,48 @@ function initPhrases() {
   const show = (next) => {
     if (next === current) return;
     const prev = phrases[current];
-    prev.classList.remove('is-active');
-    prev.classList.add('is-leaving');
+    if (prev) {
+      prev.classList.remove('is-active');
+      prev.classList.add('is-leaving');
+      setTimeout(() => prev.classList.remove('is-leaving'), 900);
+    }
     const target = phrases[next];
     target.classList.remove('is-leaving');
     // força o estado inicial (abaixo) antes de animar a entrada
     void target.offsetWidth;
     target.classList.add('is-active');
-    setTimeout(() => prev.classList.remove('is-leaving'), 900);
     current = next;
-    if (count) count.textContent = String(next + 1).padStart(2, '0');
   };
+
+  // Entrada e saída do módulo: a parte fixa surge letra por letra e o
+  // complemento vem logo depois. Ao sair da tela, tudo volta ao começo.
+  if (!('IntersectionObserver' in window) || reducedMotion.matches) {
+    text.classList.add('is-in');
+  } else {
+    let enterTimer;
+    new IntersectionObserver(
+      ([e]) => {
+        if (!e.isIntersecting || text.classList.contains('is-in')) return;
+        text.classList.remove('is-out');
+        text.classList.add('is-in', 'is-entering');
+        clearTimeout(enterTimer);
+        enterTimer = setTimeout(() => text.classList.remove('is-entering'), 1600);
+      },
+      { rootMargin: '0px 0px -12% 0px', threshold: 0.01 },
+    ).observe(text);
+    new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) return;
+      text.classList.remove('is-in', 'is-entering');
+      text.classList.add('is-out');
+    }).observe(text);
+  }
 
   let lastP = -1;
   updaters.push((y) => {
     const p = clamp((y - top) / distance);
     if (p === lastP) return; // fora da seção: nada muda
     lastP = p;
-    const idx = Math.min(phrases.length - 1, Math.floor(p * phrases.length));
-    show(idx);
-    if (bar) bar.style.transform = `scaleX(${p.toFixed(4)})`;
+    show(Math.min(phrases.length - 1, Math.floor(p * phrases.length)));
   });
 }
 
@@ -296,26 +630,45 @@ function initStack() {
 }
 
 /* ---------------------------------------------------------
-   Revelação ao entrar na tela
+   Revelação ao entrar na tela (repete a cada passagem)
    --------------------------------------------------------- */
 function initReveal() {
   const targets = document.querySelectorAll('.reveal, .reveal-chars, [data-logo-reveal]');
+  // Hero (descrição e marquee): a entrada da abertura se repete quando voltam à tela
+  const replays = document.querySelectorAll('[data-replay]');
   if (!('IntersectionObserver' in window) || reducedMotion.matches) {
     targets.forEach((t) => t.classList.add('is-in'));
     return;
   }
-  const io = new IntersectionObserver(
+  // As animações se repetem a cada passagem: entram quando o elemento está 12%
+  // dentro da tela e são rearmadas quando ele sai por completo (por cima ou por baixo).
+  const enter = new IntersectionObserver(
     (entries) => {
       entries.forEach((e) => {
-        if (e.isIntersecting) {
-          e.target.classList.add('is-in');
-          io.unobserve(e.target);
-        }
+        if (!e.isIntersecting) return;
+        e.target.classList.add('is-in');
+        e.target.classList.remove('is-out');
       });
     },
     { rootMargin: '0px 0px -12% 0px', threshold: 0.01 },
   );
-  targets.forEach((t) => io.observe(t));
+  const leave = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (e.isIntersecting) return;
+      e.target.classList.remove('is-in');
+      e.target.classList.add('is-out');
+    });
+  });
+  targets.forEach((t) => {
+    enter.observe(t);
+    leave.observe(t);
+  });
+  // Hero: volta a animar assim que qualquer parte aparece (o marquee pode
+  // estar só com a pontinha visível no topo da página)
+  const replay = new IntersectionObserver((entries) => {
+    entries.forEach((e) => e.target.classList.toggle('is-out', !e.isIntersecting));
+  });
+  replays.forEach((t) => replay.observe(t));
 }
 
 /* ---------------------------------------------------------
@@ -414,6 +767,30 @@ function initClients() {
 }
 
 /* ---------------------------------------------------------
+   Imagens: carregam e decodificam bem antes de entrar na tela
+   (1,5 tela de antecedência), para nunca aparecerem em branco
+   nem travarem o scroll quando surgem (as de Serviços chegam a 4K)
+   --------------------------------------------------------- */
+function initWarmup() {
+  if (!('IntersectionObserver' in window)) return;
+  const io = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((e) => {
+        if (!e.isIntersecting) return;
+        const img = e.target;
+        io.unobserve(img);
+        img.loading = 'eager';
+        const decode = () => img.decode?.().catch(() => {});
+        if (img.complete) decode();
+        else img.addEventListener('load', decode, { once: true });
+      });
+    },
+    { rootMargin: '150% 0px' },
+  );
+  document.querySelectorAll('img[loading="lazy"]').forEach((img) => io.observe(img));
+}
+
+/* ---------------------------------------------------------
    Marquee do Hero: pausa quando sai da tela
    --------------------------------------------------------- */
 function initMarquee() {
@@ -481,6 +858,7 @@ function initSmoothScroll() {
   window.addEventListener('keydown', stop);
   window.addEventListener('pointerdown', stop);
   window.addEventListener('resize', stop);
+  stopSmooth = stop;
 }
 
 /* ---------------------------------------------------------
@@ -555,6 +933,7 @@ const requestUpdate = () => {
 };
 
 initMenu();
+initReel();
 initScrollWords();
 initPhrases();
 initStack();
@@ -562,6 +941,7 @@ initReveal();
 initCursorPill();
 initClients();
 initMarquee();
+initWarmup();
 initNewsletter();
 initSmoothScroll();
 initEntryCleanup();

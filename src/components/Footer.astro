@@ -6,6 +6,16 @@ import { withBase } from '../lib/url.js';
 const year = new Date().getFullYear();
 
 // Paths do logo do Figma (nó 783:312), separados por letra para a animação.
+// Cada letra vira um <svg> próprio (posição em .fg0….fg5 no CSS), para a
+// animação de subida rodar na GPU em vez de redesenhar o logo inteiro a cada quadro.
+const bounds = [
+  [0, 284.241],
+  [341.369, 516.825],
+  [567.844, 634.006],
+  [694.189, 905.652],
+  [956.673, 1171.19],
+  [1225.14, 1438],
+];
 const letters = [
   'M216.298 433.873V164.298L158.025 342.147H121.381L66.1617 167.947V433.873H0V0H59.5456L142.502 228.663L222.914 0H284.241V433.873H216.298Z',
   'M341.369 0H516.825V62.0191H407.404V184.754H501.812V246.122H407.404V371.984H516.825V434.004H341.369V0Z',
@@ -66,9 +76,19 @@ const letters = [
     </address>
   </div>
 
-  <div class="footer__logo" data-logo-reveal>
-    <svg viewBox="0 0 1438 437" role="img" aria-label="Meiuca">
-      {letters.map((d, i) => <path class={`footer__letter fl${i}`} d={d} fill="currentColor" />)}
-    </svg>
+  <div class="footer__logo" data-logo-reveal role="img" aria-label="Meiuca">
+    {
+      letters.map((d, i) => (
+        <span class={`footer__glyph fg${i}`}>
+          <svg
+            class={`footer__letter fl${i}`}
+            viewBox={`${bounds[i][0]} 0 ${(bounds[i][1] - bounds[i][0]).toFixed(3)} 437`}
+            aria-hidden="true"
+          >
+            <path d={d} fill="currentColor" />
+          </svg>
+        </span>
+      ))
+    }
   </div>
 </footer>
