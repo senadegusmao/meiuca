@@ -30,6 +30,12 @@ const poster = await getImage({ src: reelPoster, width: 1280, format: 'webp', qu
   com o fundo de vidro e o hover do joaosena.com.
 -->
 <div class="menu" id="menu" data-menu hidden>
+  <!--
+    O vidro (backdrop-filter) fica parado e é revelado com clip-path; só o conteúdo
+    desliza. Animar transform num elemento com backdrop-filter causa falhas no
+    desfoque (principalmente no Safari) e recalcula o vidro a cada quadro.
+  -->
+  <div class="menu__glass" aria-hidden="true"></div>
   <div class="menu__panel">
     <div class="menu__grid">
       <div class="menu__reel">
