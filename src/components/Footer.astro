@@ -1,6 +1,7 @@
 ---
 import { nav, contact } from '../data/content.js';
 import Arrow from '../assets/svg/arrow.svg';
+import { withBase } from '../lib/url.js';
 
 const year = new Date().getFullYear();
 
@@ -45,7 +46,7 @@ const letters = [
   <div class="footer__links reveal">
     <nav aria-label="Rodapé">
       <ul class="footer__list" role="list">
-        {nav.map((item) => <li><a href={item.href}>{item.label}</a></li>)}
+        {nav.map((item) => <li><a href={withBase(item.href)}>{item.label}</a></li>)}
       </ul>
     </nav>
     <div><a href={`mailto:${contact.email}`}>{contact.email}</a></div>
