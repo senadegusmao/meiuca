@@ -79,8 +79,14 @@ body {
   overflow-x: clip;
 }
 
+/* Scroll travado (menu aberto). --sbw compensa a barra de rolagem que some,
+   para a página e o header não pularem para o lado. */
 body.is-locked {
   overflow: hidden;
+  padding-right: var(--sbw, 0px);
+}
+body.is-locked .site-header {
+  padding-right: calc(var(--gutter) + var(--sbw, 0px));
 }
 
 img,
@@ -232,6 +238,17 @@ address {
   animation-timing-function: var(--ease-out);
 }
 
+/* Depois da entrada (classe posta pelo JS), as animações são desligadas
+   e a intro sai do documento: menos camadas a cada quadro. */
+.is-entered .enter,
+.is-entered .enter-char,
+.is-entered .enter-rise {
+  animation: none;
+}
+.is-entered .intro {
+  display: none;
+}
+
 /* Palavras/letras partidas: cada palavra não quebra no meio */
 .split-word {
   display: inline-block;
@@ -240,7 +257,7 @@ address {
 
 /* Revelação ao entrar na tela (classe .is-in adicionada pelo JS) */
 .js .reveal {
-  opacity: 0.001;
+  opacity: 0;
   transform: translateY(20px);
   transition:
     opacity 0.9s var(--ease-out),
@@ -261,7 +278,7 @@ address {
 /* Texto que surge letra por letra ao entrar na tela (Prolab) */
 .js .reveal-chars .ch {
   display: inline-block;
-  opacity: 0.001;
+  opacity: 0;
   filter: blur(10px);
   transform: translateY(20px);
   transition:
@@ -444,10 +461,6 @@ address {
   padding: var(--gutter);
   color: var(--c-fg);
   mix-blend-mode: difference;
-  transition: transform 0.6s var(--ease-out);
-}
-.site-header.is-hidden {
-  transform: translateY(-100%);
 }
 .site-header__logo svg {
   width: 100px;
@@ -475,12 +488,22 @@ address {
     background-color: rgba(255, 255, 255, 0.16);
   }
 }
+/* Menu aberto: o "Fechar" fica sem a caixa; no hover só o texto escurece */
 .site-header__toggle[aria-expanded='true'] {
-  background-color: rgba(255, 255, 255, 0.16);
+  background-color: transparent;
+}
+.site-header__toggle-label {
+  transition:
+    transform 0.5s var(--ease-out),
+    opacity 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+@media (hover: hover) {
+  .site-header__toggle[aria-expanded='true']:hover [data-label-open] {
+    opacity: 0.4;
+  }
 }
 .site-header__toggle-label {
   grid-area: 1 / 1;
-  transition: transform 0.5s var(--ease-out);
 }
 .site-header__toggle [data-label-open] {
   transform: translateY(100%);
@@ -508,20 +531,37 @@ address {
 .menu[hidden] {
   display: none;
 }
-.menu__panel {
-  position: relative;
+.menu {
+  --menu-h: min(672px, 100svh);
+}
+/*
+  A abertura é animada no JS (main.js, initMenu), num único loop:
+  - o vidro fica parado e é revelado de cima para baixo (clip-path);
+  - o conteúdo desliza junto com a borda do vidro (transform).
+  Os dois andam no mesmo quadro, então a borda do vidro e o conteúdo
+  nunca se descolam, e o elemento com backdrop-filter nunca se move
+  (mover um backdrop-filter causa falhas no desfoque, sobretudo no Safari).
+  Curvas: abrir 0,6s como no meiuca.design; fechar 0,45s.
+*/
+/* Vidro do joaosena.com */
+.menu__glass {
+  position: absolute;
+  inset: 0 0 auto 0;
   z-index: 1;
-  height: min(672px, 100svh);
+  height: var(--menu-h);
   background-color: rgba(255, 255, 255, 0.1);
   -webkit-backdrop-filter: blur(50px);
   backdrop-filter: blur(50px);
-  transform: translateY(-100%);
-  /* mesma curva medida no meiuca.design: ~0.6s, desaceleração cúbica */
-  transition: transform 0.6s cubic-bezier(0.33, 1, 0.68, 1);
-  overflow: hidden;
+  clip-path: inset(0 0 100% 0);
+  pointer-events: none;
 }
-.menu.is-open .menu__panel {
-  transform: none;
+.menu__panel {
+  position: relative;
+  z-index: 2;
+  height: var(--menu-h);
+  transform: translate3d(0, -100%, 0);
+  will-change: transform;
+  overflow: hidden;
 }
 .menu__scrim {
   position: absolute;
@@ -597,8 +637,8 @@ address {
 }
 
 @media (max-width: 760px) {
-  .menu__panel {
-    height: 100svh;
+  .menu {
+    --menu-h: 100svh;
   }
   .menu__grid {
     grid-template-columns: 1fr;
@@ -730,6 +770,10 @@ address {
   gap: 16px;
   padding-right: 16px;
 }
+/* Fora da tela o marquee pausa e não gasta GPU */
+.marquee.is-paused .marquee__track {
+  animation-play-state: paused;
+}
 @keyframes marquee {
   to {
     transform: translate3d(-50%, 0, 0);
@@ -816,7 +860,7 @@ address {
 }
 .phrase .ch {
   display: inline-block;
-  opacity: 0.001;
+  opacity: 0;
   filter: blur(10px);
   transform: translateY(20px);
   transition:
@@ -831,7 +875,7 @@ address {
   transform: none;
 }
 .phrase.is-leaving .ch {
-  opacity: 0.001;
+  opacity: 0;
   filter: blur(10px);
   transform: translateY(-20px);
   transition-duration: 0.45s;
@@ -1224,7 +1268,7 @@ address {
 .reveal-i8 { --rd: 0.32s; }
 .reveal-i9 { --rd: 0.36s; }
 
-/* Ponto azul + prévia: seguem o cursor (posição definida via JS) */
+/* Prévia do cliente: segue o cursor (posição definida via JS) */
 .clients__cursor {
   position: fixed;
   left: 0;
@@ -1232,17 +1276,6 @@ address {
   z-index: 60;
   pointer-events: none;
   will-change: transform;
-}
-.clients__dot {
-  position: absolute;
-  left: -12px;
-  top: -12px;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: #1474ff;
-  scale: 0;
-  transition: scale 0.45s var(--ease-spring);
 }
 .clients__preview {
   position: absolute;
@@ -1268,9 +1301,6 @@ address {
   object-fit: cover;
   scale: 1.15;
   transition: scale 0.8s var(--ease-out);
-}
-.clients.is-hovering .clients__dot {
-  scale: 1;
 }
 .clients__shot.is-on {
   opacity: 1;
@@ -1474,9 +1504,6 @@ address {
   .cursor-pill,
   .clients__cursor {
     display: none;
-  }
-  .menu__panel {
-    transition: none;
   }
   .js .reveal-chars .ch,
   .phrase.is-active .ch {
