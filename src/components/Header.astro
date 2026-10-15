@@ -5,7 +5,7 @@ import reelPoster from '../assets/images/reel-poster.png';
 import { menu, reel } from '../data/content.js';
 import { withBase } from '../lib/url.js';
 
-const poster = await getImage({ src: reelPoster, width: 1280, format: 'webp', quality: 80 });
+const poster = await getImage({ src: reelPoster, width: 1280, format: 'webp', quality: 82 });
 ---
 
 <header class="site-header" data-header>
@@ -27,19 +27,19 @@ const poster = await getImage({ src: reelPoster, width: 1280, format: 'webp', qu
 <!--
   Menu aberto: mesma estrutura e comportamento do menu do meiuca.design
   (painel que desce do topo com 672px, reel à esquerda e links à direita),
-  com o fundo de vidro e o hover do joaosena.com.
+  com o fundo de vidro e o hover do joaosena.com. Com o menu aberto, o reel
+  fixo do canto (Reel.astro) desce e sai da tela; ao fechar, ele volta.
 -->
 <div class="menu" id="menu" data-menu hidden>
   <!--
-    O vidro (backdrop-filter) fica parado e é revelado com clip-path; só o conteúdo
-    desliza. Animar transform num elemento com backdrop-filter causa falhas no
-    desfoque (principalmente no Safari) e recalcula o vidro a cada quadro.
+    O vidro (backdrop-filter) cresce em altura e o conteúdo desliza junto.
+    Nunca anime transform num elemento com backdrop-filter: o desfoque falha.
   -->
   <div class="menu__glass" aria-hidden="true"></div>
   <div class="menu__panel">
     <div class="menu__grid">
       <div class="menu__reel">
-        <button class="menu__reel-media" type="button" data-reel-open aria-label={`Assistir ao reel da Meiuca (${reel.duration})`}>
+        <button class="menu__reel-media" type="button" data-menu-reel aria-label={`Assistir ao reel da Meiuca (${reel.duration})`}>
           <video
             muted
             loop
@@ -73,11 +73,4 @@ const poster = await getImage({ src: reelPoster, width: 1280, format: 'webp', qu
     </div>
   </div>
   <div class="menu__scrim" data-menu-dismiss></div>
-</div>
-
-<!-- Reel completo: o player do Vimeo só é carregado quando a pessoa clica -->
-<div class="reel-modal" role="dialog" aria-modal="true" aria-label="Reel da Meiuca" data-reel-modal hidden>
-  <div class="reel-modal__backdrop" data-reel-close></div>
-  <div class="reel-modal__frame" data-reel-frame data-vimeo-id={reel.vimeoId}></div>
-  <button class="reel-modal__close" type="button" data-reel-close>Fechar</button>
 </div>
