@@ -52,3 +52,4 @@ Responda sempre em português (pt-BR). O dono do projeto é o João Sena, design
 - Depois de cada alteração: build, verificação com Playwright em 1440×900 e 390×844 (capturas, console sem erros, sem rolagem horizontal), depois commit e push na `main`. O João quer o repositório sempre atualizado.
 - O Chromium headless em modo software não renderiza `backdrop-filter: blur(50px)` em áreas grandes. Para conferir o vidro, rode com `--use-angle=swiftshader --enable-unsafe-swiftshader`.
 - Mensagens de commit em português.
+- **Publicação:** o GitHub Pages publica a cada push na `main` (`.github/workflows/deploy.yml`) em https://senadegusmao.github.io/meiuca/. O subcaminho vem de `BASE_PATH` no workflow, então caminhos da raiz (`/fonts/…`, `/media/…`, `/`) passam sempre por `withBase()` de `src/lib/url.js`. O Pages não envia headers: a CSP também está num `<meta>` em `Base.astro` (mantenha igual à dos headers).
