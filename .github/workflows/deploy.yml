@@ -1,0 +1,42 @@
+# Publica o site no GitHub Pages a cada push na main.
+# Endereço: https://senadegusmao.github.io/meiuca/
+# Requer Settings > Pages > Source: "GitHub Actions".
+name: Publicar no GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # Lidos em astro.config.mjs. Com domínio próprio, troque SITE_URL e use BASE_PATH: /
+      SITE_URL: https://senadegusmao.github.io
+      BASE_PATH: /meiuca
+    steps:
+      - name: Baixar o repositório
+        uses: actions/checkout@v7
+      - name: Instalar, gerar o build e enviar o site
+        uses: withastro/action@v6
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publicar no GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
