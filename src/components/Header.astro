@@ -3,12 +3,13 @@ import { getImage } from 'astro:assets';
 import Logo from '../assets/svg/logo.svg';
 import reelPoster from '../assets/images/reel-poster.png';
 import { menu, reel } from '../data/content.js';
+import { withBase } from '../lib/url.js';
 
 const poster = await getImage({ src: reelPoster, width: 1280, format: 'webp', quality: 80 });
 ---
 
 <header class="site-header" data-header>
-  <a href="/" class="site-header__logo enter d1" aria-label="Meiuca — página inicial">
+  <a href={withBase('/')} class="site-header__logo enter d1" aria-label="Meiuca — página inicial">
     <Logo width="100" height="30" aria-hidden="true" />
   </a>
   <button
@@ -43,8 +44,8 @@ const poster = await getImage({ src: reelPoster, width: 1280, format: 'webp', qu
             tabindex="-1"
             data-reel-preview
           >
-            <source data-src="/media/reel-preview.webm" type="video/webm" />
-            <source data-src="/media/reel-preview.mp4" type="video/mp4" />
+            <source data-src={withBase('/media/reel-preview.webm')} type="video/webm" />
+            <source data-src={withBase('/media/reel-preview.mp4')} type="video/mp4" />
           </video>
         </button>
         <p class="menu__reel-label">Play reel - {reel.duration}</p>
@@ -55,7 +56,7 @@ const poster = await getImage({ src: reelPoster, width: 1280, format: 'webp', qu
           {
             menu.map((item) => (
               <li class="menu__item">
-                <a class="menu__link" href={item.href} data-menu-link>
+                <a class="menu__link" href={withBase(item.href)} data-menu-link>
                   <span>{item.label}</span>
                 </a>
               </li>
