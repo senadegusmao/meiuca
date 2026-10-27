@@ -8,13 +8,21 @@ import servProduto from '../assets/images/servico-produto.png';
 import servDS from '../assets/images/servico-design-system.png';
 import servBranding from '../assets/images/servico-branding.png';
 import servIA from '../assets/images/servico-ia.png';
+// Detalhes de Serviços: recortes em alta das imagens principais (provisórios)
+import servProdutoD1 from '../assets/images/servico-produto-detalhe-1.png';
+import servProdutoD2 from '../assets/images/servico-produto-detalhe-2.png';
+import servDSD1 from '../assets/images/servico-design-system-detalhe-1.png';
+import servDSD2 from '../assets/images/servico-design-system-detalhe-2.png';
+import servBrandingD1 from '../assets/images/servico-branding-detalhe-1.png';
+import servBrandingD2 from '../assets/images/servico-branding-detalhe-2.png';
+import servIAD1 from '../assets/images/servico-ia-detalhe-1.png';
+import servIAD2 from '../assets/images/servico-ia-detalhe-2.png';
 import blog1 from '../assets/images/blog-1.png';
 import blog2 from '../assets/images/blog-2.png';
 import blog3 from '../assets/images/blog-3.png';
 import avatar1 from '../assets/images/avatar-1.png';
 import avatar2 from '../assets/images/avatar-2.png';
 import avatar3 from '../assets/images/avatar-3.png';
-import clienteMude from '../assets/images/cliente-mude.png';
 
 export const heroText =
   'Somos um estúdio de design e estratégia orgulhosamente brasileiro, um parceiro ideal para organizações que entendem a importância de acelerar sem abrir mão da autenticidade.';
@@ -28,24 +36,63 @@ export const heroImages = [
   { src: hero5, size: 'b', alt: 'Relógio inteligente exibindo saldo de investimentos' },
 ];
 
-// 10 Anos: a parte fixa fica parada e o complemento troca com o scroll
+// 10 Anos (módulo Marques do esrbespoke.au): frase fixa em cima e, embaixo,
+// as frases que completam a ideia; uma por vez acende e cresce com o scroll
 export const tenYears = {
-  lead: 'Há 10 anos ajudamos grandes empresas',
+  // A frase fixa termina em "a:" e as frases de baixo completam a ideia
+  // (por isso começam sem o "a").
+  lead: 'Há mais de 10 anos ajudamos grandes empresas a:',
   phrases: [
-    'com desafios complexos de design',
-    'a reimaginar a experiência de um serviço',
-    'a evoluir seu design system',
-    'a repensar processos de design com IA',
-    'a sistematizar a governança da marca',
+    'lidar com desafios complexos de design',
+    'reimaginar a experiência de um serviço',
+    'evoluir seu design system',
+    'repensar processos de design com IA',
+    'sistematizar a governança da marca',
   ],
 };
 
+// Serviços (layout do iverson.inc): lista em sanfona. Cada serviço tem uma imagem
+// principal (16:9), dois detalhes, uma descrição e as tags.
+// - Descrições: texto provisório. Tags: sugestões tiradas do próprio site; revise.
+// - Detalhes: por enquanto são recortes da imagem principal. Troque por imagens
+//   próprias do projeto quando houver (2 por serviço, 16:9).
+const svcText = (area) =>
+  `Texto provisório. Aqui entra uma frase sobre como a Meiuca trabalha com ${area}: o problema que resolve e o que muda para o cliente.`;
+
 export const services = [
-  { name: 'Produto', image: servProduto },
-  { name: 'Design System', image: servDS },
-  // Imagem provisória: o Figma ainda não tem uma imagem para Branding
-  { name: 'Branding', image: servBranding, position: '50% 0%' },
-  { name: 'Inteligência Artificial', image: servIA },
+  {
+    name: 'Produto',
+    image: servProduto,
+    alt: 'Telas de um app de companhia aérea: novidades, login, busca de voos e check-in',
+    details: [servProdutoD1, servProdutoD2],
+    description: svcText('produto'),
+    tags: ['Pesquisa', 'Estratégia', 'UX', 'UI', 'Prototipação', 'Desenvolvimento'],
+  },
+  {
+    name: 'Design System',
+    image: servDS,
+    alt: 'Tela de bagagem de um app de viagem, construída com os componentes do design system',
+    details: [servDSD1, servDSD2],
+    description: svcText('design systems'),
+    tags: ['Fundamentos', 'Tokens', 'Componentes', 'Documentação', 'Governança', 'IA'],
+  },
+  {
+    // Imagem provisória: o Figma ainda não tem uma imagem para Branding
+    name: 'Branding',
+    image: servBranding,
+    alt: 'Flor com o texto “a living brand OS.”',
+    details: [servBrandingD1, servBrandingD2],
+    description: svcText('marca'),
+    tags: ['Estratégia', 'Identidade visual', 'Tom de voz', 'Sistema de marca', 'Governança'],
+  },
+  {
+    name: 'Inteligência Artificial',
+    image: servIA,
+    alt: 'Anéis de luz abstratos sobre fundo preto',
+    details: [servIAD1, servIAD2],
+    description: svcText('inteligência artificial'),
+    tags: ['Agent Experience', 'Interfaces conversacionais', 'Processos com IA', 'Assets de marca com IA'],
+  },
 ];
 
 
@@ -125,16 +172,20 @@ export const contact = {
   address: ['Brasil — São Paulo', 'Rua Aspicuelta, 422 Vila Madalena'],
 };
 
-// Clientes: ao passar o mouse, o nome acende e aparece uma prévia do projeto.
-// Adicione `image` (e `imageAlt`) aos demais clientes quando houver imagem.
+// Clientes (layout do work.co/clients): nome, descrição e link de cada um.
+// As descrições são provisórias; troque `description` e o `href` do link
+// quando houver o texto e a página de cada projeto. Sem `link`, o link some.
+const placeholder =
+  'Texto provisório. Aqui entra um resumo do projeto: o desafio, o que fizemos juntos e o resultado.';
+const caseLink = { label: 'Ver projeto', href: '#' };
+
 export const clients = [
-  { name: 'Estapar' },
-  { name: 'Mude', image: clienteMude, imageAlt: 'Tela de app de meditação sobre foto de montanhas ao pôr do sol' },
-  { name: 'Caju' },
-  { name: 'Unimed' },
-  { name: 'Rands' },
-  { name: 'Printi' },
-  { name: 'Iti' },
-  { name: 'Rede' },
-  { name: 'Eve' },
+  { name: 'Estapar', description: placeholder, link: caseLink },
+  { name: 'Mude', description: placeholder, link: caseLink },
+  { name: 'Caju', description: placeholder, link: caseLink },
+  { name: 'Unimed', description: placeholder, link: caseLink },
+  { name: 'Rands', description: placeholder, link: caseLink },
+  { name: 'Printi', description: placeholder, link: caseLink },
+  { name: 'Iti', description: placeholder, link: caseLink },
+  { name: 'Rede', description: placeholder, link: caseLink },
 ];

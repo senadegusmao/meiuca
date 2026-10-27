@@ -1,64 +1,20 @@
 ---
 import { tenYears } from '../data/content.js';
-import { splitText } from '../lib/split.js';
+import SplitChars from './SplitChars.astro';
 
-// Texto único do Figma: a parte fixa ("Há 10 anos ajudamos grandes empresas")
-// fica parada e só o complemento troca com o scroll.
-const lead = splitText(tenYears.lead);
-const phrases = tenYears.phrases.map((p) => splitText(p));
+// Módulo Marques do esrbespoke.au, sem imagem. Hierarquia em três níveis:
+// a frase fixa (40px, branca) em cima; logo abaixo, a frase acesa (80px,
+// branca), que completa a frase fixa; e as próximas, menores e apagadas.
+// Com o scroll a lista sobe: a acesa apaga subindo e a próxima cresce no
+// lugar dela. Sem JS (ou com movimento reduzido) a lista fica parada, com
+// todas as frases visíveis.
 ---
 
 <section class="ten" aria-labelledby="ten-title" data-phrases>
-  <div class="ten__sticky">
-    <!-- Versão para leitores de tela: as frases completas, sem animação -->
-    <h2 class="visually-hidden" id="ten-title">{tenYears.lead}</h2>
-    <ul class="visually-hidden">
-      {tenYears.phrases.map((p) => <li>{tenYears.lead} {p}</li>)}
+  <div class="ten__stage">
+    <h2 class="ten__lead reveal-chars" id="ten-title" data-reveal><SplitChars text={tenYears.lead} /></h2>
+    <ul class="ten__list reveal" role="list" data-phrase-list>
+      {tenYears.phrases.map((p) => <li class="ten__item" data-phrase>{p}</li>)}
     </ul>
-
-    <!--
-      Camadas empilhadas no mesmo lugar. A primeira mostra a parte fixa;
-      cada uma das outras repete a parte fixa invisível (para o complemento
-      começar exatamente depois de "empresas") e anima só o complemento.
-    -->
-    <div class="ten__text" aria-hidden="true" data-phrase-text>
-      <p class="ten__layer ten__lead">
-        {
-          lead.map((w) => (
-            <>
-              <span class="split-word">
-                {w.chars.map((c) => (
-                  <span class={`ch cd${c.i}`}>{c.ch}</span>
-                ))}
-              </span>{' '}
-            </>
-          ))
-        }
-      </p>
-      {
-        phrases.map((words, i) => (
-          <p class="ten__layer phrase" data-phrase={i}>
-            {lead.map((w) => (
-              <>
-                <span class="split-word ten__ghost">
-                  {w.chars.map((c) => (
-                    <span class="ch">{c.ch}</span>
-                  ))}
-                </span>{' '}
-              </>
-            ))}
-            {words.map((w) => (
-              <>
-                <span class="split-word">
-                  {w.chars.map((c) => (
-                    <span class={`ch cd${Math.min(c.i, 239)}`}>{c.ch}</span>
-                  ))}
-                </span>{' '}
-              </>
-            ))}
-          </p>
-        ))
-      }
-    </div>
   </div>
 </section>

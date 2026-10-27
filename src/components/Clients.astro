@@ -1,46 +1,26 @@
 ---
-import { Picture } from 'astro:assets';
 import { clients } from '../data/content.js';
+import { withBase } from '../lib/url.js';
 import SplitChars from './SplitChars.astro';
+
+// Layout do work.co/clients: grade de 3 colunas, o título do módulo ocupa a
+// primeira célula e cada cliente tem nome, descrição e link. Os links ficam
+// alinhados na base de cada linha. Conteúdo em `clients`, no content.js.
 ---
 
-<section class="clients" aria-labelledby="clients-title" data-clients>
+<section class="clients" aria-labelledby="clients-title">
   <h2 class="clients__title reveal-chars" id="clients-title" data-reveal><SplitChars text="Clientes" /></h2>
-
-  <ul class="clients__list" role="list">
-    {
-      clients.map((c, i) => (
-        <li class={`clients__item reveal reveal-i${Math.min(i, 9)}`} data-client={c.image ? i : undefined}>
-          {c.name}
-        </li>
-      ))
-    }
-  </ul>
-
-  <!-- Prévia do projeto do cliente: segue o mouse -->
-  <div class="clients__cursor" aria-hidden="true" data-clients-cursor>
-    <div class="clients__preview">
-      {
-        clients.map((c, i) =>
-          c.image ? (
-            <div class="clients__shot" data-shot={i}>
-              <Picture
-                src={c.image}
-                alt=""
-                formats={['avif', 'webp']}
-                fallbackFormat="jpg"
-                quality={85}
-                widths={[240, 480, 720, 960]}
-                sizes="240px"
-                width={240}
-                height={180}
-                loading="lazy"
-                decoding="async"
-              />
-            </div>
-          ) : null,
-        )
-      }
-    </div>
-  </div>
+  {
+    clients.map((c, i) => (
+      <article class={`client reveal reveal-d${(i + 1) % 3}`}>
+        <h3 class="client__name">{c.name}</h3>
+        <p class="client__desc">{c.description}</p>
+        {c.link && (
+          <a class="client__link" href={withBase(c.link.href)} aria-label={`${c.link.label}: ${c.name}`}>
+            <span>{c.link.label}</span>
+          </a>
+        )}
+      </article>
+    ))
+  }
 </section>

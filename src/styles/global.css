@@ -523,6 +523,22 @@ address {
   padding: var(--gutter);
   color: var(--c-fg);
   mix-blend-mode: difference;
+  transition:
+    transform 0.6s var(--ease-out),
+    opacity 0.4s var(--ease-out);
+}
+/* Some quando o footer chega (initHeaderHide) e volta ao subir. Com foco
+   do teclado ou com o menu aberto, ele aparece de novo. */
+.site-header.is-hidden {
+  transform: translateY(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+.site-header.is-hidden:focus-within,
+body.is-locked .site-header.is-hidden {
+  transform: none;
+  opacity: 1;
+  pointer-events: auto;
 }
 .site-header__logo svg {
   width: 100px;
@@ -774,7 +790,7 @@ address {
     transform 0.6s var(--ease-out),
     opacity 0.4s var(--ease-out);
 }
-/* Fora do caminho: em Serviços (o título dos cards fica nesse canto) e com o menu aberto */
+/* Fora do caminho: com o menu aberto e quando o footer chega */
 .reel.is-tucked:not(.is-full):not(.is-closing) .reel__player,
 .reel.is-away:not(.is-full):not(.is-closing) .reel__player {
   transform: translateY(calc(100% + 40px));
@@ -967,216 +983,318 @@ address {
 }
 
 /* =========================================================
-   10 Anos (scroll travado enquanto as frases mudam)
+   10 Anos (módulo Marques do esrbespoke.au, sem imagem)
+   Hierarquia em três níveis, tudo em Archivo Light e alinhado à esquerda:
+   1. a frase acesa: 80px (o tamanho do Figma; a frase mais longa ainda
+      cabe numa linha), branca;
+   2. a frase fixa: 40px, branca, logo acima dela (as duas formam uma
+      frase só: "…grandes empresas a: reimaginar…");
+   3. as próximas: 40px (metade da acesa) e 20% de opacidade.
+   Com JS, a tela fica presa (sticky) e a lista sobe pela linha da frase
+   acesa: a que sai apaga subindo e a próxima cresce no lugar dela. Só
+   transform e opacity mudam (nada de layout no scroll).
    ========================================================= */
 
 .ten {
+  --ten-step: 28svh; /* rolagem por frase */
+  --ten-hold: 0.3; /* pausa na primeira e na última, em frases */
+  --ten-anchor: 0.45; /* linha da frase acesa (fração da altura da tela) */
+  --ten-min: 0.5; /* tamanho das próximas, em relação à acesa */
+  --ten-big: clamp(32px, 5.56vw, 80px); /* frase acesa */
+  --ten-lead: clamp(20px, 2.78vw, 40px); /* frase fixa */
+  --ten-gap: calc(var(--ten-big) * 0.4); /* entre a frase fixa e a acesa */
   position: relative;
-  padding: var(--space-256) var(--gutter);
+  padding: var(--space-256) 0;
 }
-.js .ten {
-  /* 100vh fixos + 45vh de rolagem por frase */
-  height: calc(100svh + 5 * 45svh);
-  padding: 0;
-}
-.js .ten__sticky {
-  position: sticky;
-  top: 0;
-  height: 100svh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: var(--header-h) var(--gutter) var(--gutter);
-}
-/* Texto do Figma: Archivo Light 80px, entrelinha 1, -0,03em, 840px de largura */
-.ten__text {
-  display: grid;
-  font-size: var(--fs-80);
+.ten__stage {
+  padding: 0 var(--gutter);
   line-height: 1;
   letter-spacing: -0.03em;
   font-weight: 300;
 }
-.ten__layer {
-  grid-area: 1 / 1;
-  max-width: 10.5em;
-  /* quebra de linha simples: a parte fixa quebra igual em todas as camadas */
-  text-wrap: wrap;
+.ten__lead {
+  margin-bottom: var(--ten-gap);
+  font: inherit;
+  font-size: var(--ten-lead);
+  line-height: 1.1;
+  letter-spacing: inherit;
+  /* em duas linhas: "Há mais de 10 anos ajudamos / grandes empresas a:" */
+  max-width: 14em;
 }
-.ten__layer .ch {
-  display: inline-block;
+.ten__list {
+  display: grid;
+  gap: 0.3em;
+  font-size: var(--ten-big);
 }
-.ten__ghost {
-  visibility: hidden;
+.ten__item {
+  transform-origin: 0 0;
 }
-/*
-  Letras surgem uma a uma, de baixo, com um blur curto (8px por 0,35s) só
-  na entrada; as que saem sobem e somem sem blur. Medido no Chromium: quase
-  o dobro de quadros por segundo na troca de frase em relação ao blur de
-  10px na entrada e na saída. Frases paradas ficam invisíveis (sem custo).
-*/
-.js .ten__lead .ch {
-  opacity: 0;
-  filter: blur(8px);
-  transform: translateY(20px);
-  transition:
-    opacity 0.8s var(--ease-out),
-    filter 0.35s var(--ease-out),
-    transform 1s var(--ease-spring);
-  transition-delay: var(--cd, 0s);
+@media (prefers-reduced-motion: no-preference) {
+  .js .ten {
+    height: calc(100svh + (var(--ten-n, 5) - 1 + 2 * var(--ten-hold)) * var(--ten-step));
+    padding: 0;
+  }
+  .js .ten__stage {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+  }
+  /* A frase fixa termina logo acima da linha da frase acesa */
+  .js .ten__lead {
+    position: absolute;
+    left: var(--gutter);
+    right: var(--gutter);
+    bottom: calc((1 - var(--ten-anchor)) * 100svh + var(--ten-big) / 2 + var(--ten-gap));
+    margin: 0;
+  }
+  /* A lista ocupa a tela; posição, tamanho e opacidade de cada frase vêm
+     do JS (initPhrases). As que já passaram ficam invisíveis. */
+  .js .ten__list {
+    position: absolute;
+    inset: 0 var(--gutter);
+    display: block;
+    overflow: clip;
+    pointer-events: none;
+  }
+  .js .ten__item {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    opacity: 0.2;
+    transform: translateY(calc(var(--ten-anchor) * 100svh)) scale(var(--ten-min));
+  }
 }
-.js .ten__text.is-in .ten__lead .ch {
-  opacity: 1;
-  filter: none;
-  transform: none;
-}
-.phrase {
-  visibility: hidden;
-}
-.phrase.is-active,
-.phrase.is-leaving {
-  visibility: visible;
-}
-.phrase .ch {
-  opacity: 0;
-  filter: blur(8px);
-  transform: translateY(20px);
-  transition:
-    opacity 0.7s var(--ease-out),
-    filter 0.35s var(--ease-out),
-    transform 0.9s var(--ease-spring);
-  transition-delay: var(--cd, 0s);
-}
-.phrase.is-active .ch {
-  opacity: 1;
-  filter: none;
-  transform: none;
-}
-.phrase.is-leaving .ch {
-  opacity: 0;
-  filter: none;
-  transform: translateY(-20px);
-  transition:
-    opacity 0.45s var(--ease-in-out),
-    transform 0.45s var(--ease-in-out);
-  transition-delay: calc(var(--cd, 0s) * 0.35);
-}
-.phrase .ten__ghost .ch {
-  transition: none;
-}
-/* Na entrada do módulo, o complemento espera a parte fixa terminar */
-.ten__text.is-entering .phrase .ch {
-  transition-delay: calc(var(--cd, 0s) + 0.4s);
-}
-/* Fora da tela: tudo volta ao começo, sem transição */
-.js .ten__text.is-out .ch {
-  opacity: 0;
-  filter: blur(8px);
-  transform: translateY(20px);
-  transition: none;
-}
-/* Sem JS: mostra a primeira frase completa */
-html:not(.js) .phrase:nth-of-type(2) {
-  visibility: visible;
-}
-html:not(.js) .phrase:nth-of-type(2) .ch {
-  opacity: 1;
-  transform: none;
+/* No celular as próximas ficam um pouco maiores (19px), para continuar legíveis */
+@media (max-width: 760px) {
+  .ten {
+    --ten-anchor: 0.4;
+    --ten-gap: 24px;
+    --ten-min: 0.6;
+  }
 }
 
 /* =========================================================
-   Serviços — cards empilhados (mecânica do Prolab)
+   Serviços (layout do iverson.inc, medido no site)
+   Título de 80px à direita; lista em sanfona com linhas de 92px.
+   Cada linha: número (10px, 40%) e nome (32px, 40% → branco no hover
+   e quando aberta). Aberta: fundo 4% branco, imagens à direita
+   alinhadas ao nome (principal 16:9 + 2 detalhes, 12px de intervalo)
+   e descrição (20px) + tags (12px, 40%) embaixo à esquerda.
    ========================================================= */
 
 .services {
+  padding: clamp(120px, 15.1vw, 218px) 0 var(--space-128);
+}
+/* Mesmo estilo do título "Clientes" (18/28, à esquerda, 32px até a lista) */
+.services__title {
+  padding: 0 var(--gutter);
+  margin-bottom: 32px;
+}
+.svc {
+  --svc-cols: repeat(16, minmax(0, 1fr));
+  --svc-gap: 20px;
+  --svc-pad: 32px;
+  --svc-name: 32px;
+  --svc-row: calc(var(--svc-pad) * 2 + var(--svc-name) * 0.9);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+/*
+  A sanfona é animada no JS (initServices): a altura do item que fecha e a do
+  que abre mudam juntas, quadro a quadro. Para isso ser leve:
+  - o conteúdo de cada item fica numa camada própria (.svc__inner) com o
+    tamanho de aberto: a animação só muda o recorte (overflow) e nada é
+    redesenhado (clip-path redesenhava o item a cada quadro);
+  - todos os itens abertos têm a mesma altura (--svc-open): o total da lista
+    não muda e as seções de baixo não se mexem.
+  .is-expanded = altura aberta no layout; .is-open = aparência de aberto.
+*/
+/* O <li> só recorta (não pinta nada): mudar a altura dele não redesenha nada */
+.svc__item {
   position: relative;
+  height: var(--svc-row);
+  overflow: hidden;
 }
-.services__stack {
-  display: flex;
-  flex-direction: column;
-  gap: 65px;
+.svc__item.is-expanded {
+  height: auto;
+  min-height: var(--svc-open, 0px);
 }
-.service-card {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  height: 100svh;
-  transform-origin: 50% 50%;
+/* Conteúdo + linha + fundo numa camada própria, no tamanho de aberto */
+.svc__inner {
+  position: relative;
+  display: grid;
+  min-height: inherit;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   will-change: transform;
 }
-.service-card:nth-child(2) { top: 50px; }
-.service-card:nth-child(3) { top: 100px; }
-.service-card:nth-child(4) { top: 150px; }
-.service-card__frame {
-  position: relative;
+/* Fundo de 4% do item aberto: aparece por opacidade (sem redesenhar) */
+.svc__inner::before {
+  content: '';
+  position: absolute;
+  inset: -1px 0 0;
+  z-index: -1;
+  /* Fundo do item aberto: preto 100% (pedido do João) */
+  background: #000000;
+  opacity: 0;
+  transition: opacity 0.4s var(--ease-out);
+}
+.svc__item.is-open .svc__inner::before {
+  opacity: 1;
+}
+/* Durante a animação o navegador não deve corrigir o scroll sozinho */
+.svc-anim {
+  overflow-anchor: none;
+}
+.svc__head,
+.svc__body {
+  grid-area: 1 / 1;
+}
+.svc__btn {
+  display: grid;
+  grid-template-columns: var(--svc-cols);
+  column-gap: var(--svc-gap);
+  align-items: start;
   width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background: #141517;
+  height: var(--svc-row);
+  padding: var(--svc-pad) var(--gutter);
+  text-align: left;
+  cursor: pointer;
 }
-.service-card__img,
-.service-card__img img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+.svc__num {
+  grid-column: 1 / 3;
+  font-size: 10px;
+  line-height: 14px;
+  letter-spacing: 0.05em;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.4);
 }
-.service-card__img,
-.service-card__img img {
-  object-fit: cover;
+.svc__name {
+  grid-column: 3 / 11;
+  font-size: var(--svc-name);
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.4);
+  transition: color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.service-card--top .service-card__img,
-.service-card--top .service-card__img img {
-  object-position: 50% 0%;
-}
-@media (max-width: 760px) {
-  .service-card__name {
-    white-space: normal;
-    text-align: right;
-  }
-  .service-card__name {
-    font-size: clamp(30px, 9vw, 44px);
-  }
-}
-.service-card__shade {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.2);
-}
-.service-card__label {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  justify-content: flex-end;
-  padding: 0 32px 0 16px;
+.svc__item.is-open .svc__name {
   color: var(--c-fg);
 }
-.service-card__name {
-  font-size: clamp(36px, 4.17vw, 60px);
-  line-height: 1;
-  letter-spacing: -0.04em;
-  font-weight: 400;
-  white-space: nowrap;
-  text-shadow: 0 0 32px rgba(0, 0, 0, 0.25);
+@media (hover: hover) {
+  .svc__btn:hover .svc__name {
+    color: var(--c-fg);
+  }
 }
-
-/* Animação do título: letras surgem com blur (como no Prolab), blur curto */
-.js .service-card .ch {
-  display: inline-block;
+.svc__btn:focus-visible {
+  outline: 1px dotted var(--c-fg);
+  outline-offset: -6px;
+}
+/* Conteúdo aberto: as imagens começam na altura do nome; o texto fica embaixo */
+.svc__body {
+  display: grid;
+  grid-template-columns: var(--svc-cols);
+  grid-template-rows: calc(var(--svc-name) * 0.9) 1fr auto;
+  column-gap: var(--svc-gap);
+  padding: var(--svc-pad) var(--gutter);
+  pointer-events: none;
+}
+.svc__media {
+  grid-column: 11 / -1;
+  grid-row: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-self: start;
+}
+.svc__media picture:first-child {
+  grid-column: 1 / -1;
+}
+.svc__img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: #111;
+}
+.svc__text {
+  grid-column: 3 / 9;
+  grid-row: 3;
+  align-self: end;
+  padding-top: 40px;
+}
+.svc__desc {
+  max-width: 21.5em;
+  font-size: 20px;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  font-weight: 300;
+}
+.svc__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 32px;
+  font-size: 12px;
+  line-height: 1.04;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.4);
+}
+/* Entrada do conteúdo ao abrir; saída rápida ao fechar */
+.svc__media,
+.svc__text {
   opacity: 0;
-  filter: blur(3px);
-  transform: translateY(10px) scale(0.8);
+  transform: translateY(16px);
   transition:
-    opacity 0.6s var(--ease-out),
-    filter 0.3s var(--ease-out),
-    transform 0.6s var(--ease-out);
+    opacity 0.25s var(--ease-out),
+    transform 0.25s var(--ease-out);
 }
-.js .service-card.is-in .ch {
+.svc__item.is-open .svc__media,
+.svc__item.is-open .svc__text {
   opacity: 1;
-  filter: none;
   transform: none;
+  pointer-events: auto;
+  transition:
+    opacity 0.6s var(--ease-out) 0.12s,
+    transform 0.8s var(--ease-spring) 0.12s;
+}
+.svc__item.is-open .svc__text {
+  transition-delay: 0.2s;
+}
+@media (max-width: 760px) {
+  .svc {
+    --svc-gap: 8px;
+    --svc-pad: 32px;
+    --svc-name: 20px;
+  }
+  .svc__num {
+    grid-column: 1 / 5;
+  }
+  .svc__name {
+    grid-column: 5 / -1;
+  }
+  /* No celular: nome, imagens e depois o texto, tudo na mesma coluna */
+  .svc__body {
+    grid-template-rows: calc(var(--svc-name) * 0.9) auto auto;
+    align-content: start;
+  }
+  .svc__media {
+    grid-column: 5 / -1;
+    grid-row: 2;
+    margin-top: 12px;
+    gap: 8px;
+  }
+  .svc__text {
+    grid-column: 5 / -1;
+    grid-row: 3;
+    padding-top: 12px;
+  }
+  .svc__desc {
+    font-size: 16px;
+  }
+  .svc__tags {
+    margin-top: 24px;
+  }
 }
 
 /* =========================================================
@@ -1200,10 +1318,20 @@ html:not(.js) .phrase:nth-of-type(2) .ch {
   color: var(--c-muted);
   font-weight: 400;
 }
+/* Títulos de Serviços e Insights: mesmo estilo do título "Clientes" */
+.services__title,
 .blog__title {
-  font-size: var(--fs-40);
-  line-height: 1;
-  letter-spacing: -0.01em;
+  font-size: 18px;
+  line-height: 28px;
+  letter-spacing: -0.02em;
+  font-weight: 400;
+}
+@media (max-width: 760px) {
+  .services__title,
+  .blog__title {
+    font-size: 16px;
+    line-height: 24px;
+  }
 }
 .blog__list {
   width: 100%;
@@ -1407,107 +1535,95 @@ html:not(.js) .phrase:nth-of-type(2) .ch {
 }
 
 /* =========================================================
-   Clientes
+   Clientes (layout do work.co/clients, medido no site)
+   Grade de 3 colunas; o título ocupa a primeira célula. Cada cliente:
+   nome 30/40, descrição 16/28 (até ~22em) e link sublinhado, alinhado
+   na base da linha. ~150px entre as linhas no desktop.
    ========================================================= */
 
 .clients {
-  position: relative;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
-  align-items: start;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: var(--gutter);
+  row-gap: clamp(64px, 10.4vw, 150px);
   padding: var(--space-128) var(--gutter);
+  /* Mesma distância (visual) de Clientes até o footer que de Insights até
+     Clientes: o padding de baixo do Insights + o de cima de Clientes, menos
+     a diferença das entrelinhas (medido: 345px no desktop, 171px no celular) */
+  padding-bottom: calc(var(--space-256) + var(--space-128) - clamp(25px, 3vw, 43px));
 }
 .clients__title {
-  font-size: clamp(24px, 2.22vw, 32px);
-  line-height: 1.2;
-  letter-spacing: -0.03em;
+  font-size: 18px;
+  line-height: 28px;
+  letter-spacing: -0.02em;
   font-weight: 400;
 }
-.clients__list {
-  display: grid;
-  gap: 16px;
+.client {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
-.clients__item {
-  justify-self: start;
-  font-size: var(--fs-40);
-  line-height: 1;
-  letter-spacing: -0.03em;
+.client__name {
+  font-size: 30px;
+  line-height: 40px;
+  letter-spacing: -0.025em;
   font-weight: 400;
-  color: #6f6f6f;
-  transition: color 0.35s var(--ease-out);
 }
-.clients__list:hover .clients__item:hover,
-.clients__item.is-active {
+.client__desc {
+  max-width: 22em;
+  margin: 10px 0 40px;
+  font-size: 16px;
+  line-height: 28px;
+  letter-spacing: -0.015em;
+  font-weight: 300;
+  color: var(--c-soft);
+}
+/* Link: sublinhado de 1px um pouco acima da base (como no work.co); no hover
+   o texto escurece para 40% (o mesmo hover do menu) */
+.client__link {
+  margin-top: auto;
+  font-size: 16px;
+  line-height: 28px;
+  letter-spacing: -0.015em;
+  font-weight: 400;
   color: var(--c-fg);
 }
-.js .clients__item.reveal {
-  transition:
-    opacity 0.9s var(--ease-out),
-    transform 1s var(--ease-spring),
-    color 0.35s var(--ease-out);
-  transition-delay: var(--rd, 0s), var(--rd, 0s), 0s;
+/* Hover igual ao dos links do footer: o sublinhado cresce da esquerda */
+.client__link span {
+  background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat;
+  padding-bottom: 2px;
+  transition: background-size 0.5s var(--ease-out);
 }
-.reveal-i1 { --rd: 0.04s; }
-.reveal-i2 { --rd: 0.08s; }
-.reveal-i3 { --rd: 0.12s; }
-.reveal-i4 { --rd: 0.16s; }
-.reveal-i5 { --rd: 0.2s; }
-.reveal-i6 { --rd: 0.24s; }
-.reveal-i7 { --rd: 0.28s; }
-.reveal-i8 { --rd: 0.32s; }
-.reveal-i9 { --rd: 0.36s; }
-
-/* Prévia do cliente: segue o cursor (posição definida via JS) */
-.clients__cursor {
-  position: fixed;
-  left: 0;
-  top: 0;
-  z-index: 60;
-  pointer-events: none;
-  will-change: transform;
+@media (hover: hover) {
+  .client__link:hover span {
+    background-size: 100% 1px;
+  }
 }
-.clients__preview {
-  position: absolute;
-  left: 24px;
-  top: 17px;
-  width: 240px;
-  height: 180px;
+.client__link:focus-visible {
+  outline: 1px dotted var(--c-fg);
+  outline-offset: 2px;
 }
-.clients__shot {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  opacity: 0;
-  clip-path: inset(0 0 100% 0);
-  transition:
-    opacity 0.3s var(--ease-out),
-    clip-path 0.55s var(--ease-out);
-}
-.clients__shot img,
-.clients__shot picture {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  scale: 1.15;
-  transition: scale 0.8s var(--ease-out);
-}
-.clients__shot.is-on {
-  opacity: 1;
-  clip-path: inset(0 0 0 0);
-}
-.clients__shot.is-on img {
-  scale: 1;
-}
-@media (hover: none) {
-  .clients__cursor {
-    display: none;
+@media (max-width: 1080px) {
+  .clients {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (max-width: 760px) {
   .clients {
     grid-template-columns: 1fr;
-    gap: 32px;
+    row-gap: 64px;
+  }
+  .clients__title {
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .client__name {
+    font-size: 24px;
+    line-height: 31px;
+  }
+  .client__desc {
+    margin-bottom: 30px;
+    line-height: 24px;
   }
 }
 
@@ -1712,13 +1828,10 @@ html:not(.js) .phrase:nth-of-type(2) .ch {
     --intro-offset: 0s;
   }
   .intro,
-  .cursor-pill,
-  .clients__cursor {
+  .cursor-pill {
     display: none;
   }
-  .js .reveal-chars .ch,
-  .js .ten__text .ten__lead .ch,
-  .js .ten__text .phrase.is-active .ch {
+  .js .reveal-chars .ch {
     opacity: 1;
     filter: none;
     transform: none;
@@ -1737,14 +1850,6 @@ html:not(.js) .phrase:nth-of-type(2) .ch {
   }
   .js .hero__desc .w {
     color: var(--c-fg);
-  }
-  .service-card {
-    transform: none !important;
-  }
-  .js .service-card .ch {
-    opacity: 1;
-    filter: none;
-    transform: none;
   }
 }
 
