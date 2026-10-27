@@ -19,6 +19,8 @@ const measurers = [];
    A largura da barra de rolagem vira padding (--sbw): sem pulo lateral.
    --------------------------------------------------------- */
 let stopSmooth = () => {};
+// Rola até y com o mesmo scroll suave da roda (ou o nativo, sem ele)
+let scrollToY = (y) => window.scrollTo({ top: y, behavior: reducedMotion.matches ? 'auto' : 'smooth' });
 // O menu conversa com o reel fixo (esconder ao abrir, abrir a partir do reel do menu)
 let reelApi = null;
 const canScrollInside = (target) => {
@@ -502,105 +504,6 @@ function initScrollWords() {
 }
 
 /* ---------------------------------------------------------
-   10 Anos (módulo Marques do esrbespoke.au): a tela fica presa e a
-   lista de frases sobe pela linha logo abaixo da frase fixa. A frase
-   na linha acende e cresce; a que sai apaga subindo; as próximas ficam
-   menores e apagadas. Tudo ligado ao scroll e só com transform/opacity.
-   --------------------------------------------------------- */
-function initPhrases() {
-  const section = document.querySelector('[data-phrases]');
-  if (!section) return;
-  const list = section.querySelector('[data-phrase-list]');
-  const items = [...section.querySelectorAll('[data-phrase]')];
-  const n = items.length;
-  if (n < 2) return;
-  section.style.setProperty('--ten-n', n);
-  const smooth = (e0, e1, x) => {
-    const t = clamp((x - e0) / (e1 - e0));
-    return t * t * (3 - 2 * t);
-  };
-  const MIN_OPACITY = 0.2;
-
-  let pinned = false;
-  let top = 0;
-  let distance = 1;
-  let hold = 0.3;
-  let minScale = 0.5;
-  let anchor = 0;
-  let line = 80;
-  let gap = 12;
-  let heights = [];
-  let lastP = -1;
-  const last = items.map(() => ({ t: '', o: -1 }));
-
-  measurers.push(() => {
-    // Presa só com movimento liberado (o CSS decide; sem isso a lista fica parada)
-    pinned = !reducedMotion.matches && getComputedStyle(list).position === 'absolute';
-    lastP = -1;
-    if (!pinned) {
-      items.forEach((it, i) => {
-        it.style.removeProperty('transform');
-        it.style.removeProperty('opacity');
-        last[i].t = '';
-        last[i].o = -1;
-      });
-      return;
-    }
-    const cs = getComputedStyle(section);
-    hold = parseFloat(cs.getPropertyValue('--ten-hold')) || 0;
-    minScale = parseFloat(cs.getPropertyValue('--ten-min')) || 0.5;
-    top = section.getBoundingClientRect().top + window.scrollY;
-    distance = Math.max(1, section.offsetHeight - vh);
-    anchor = list.clientHeight * (parseFloat(cs.getPropertyValue('--ten-anchor')) || 0.45);
-    line = parseFloat(getComputedStyle(list).fontSize) || 80;
-    gap = line * 0.3; // espaço depois de cada frase, proporcional ao tamanho dela
-    heights = items.map((it) => it.offsetHeight);
-  });
-
-  updaters.push((y) => {
-    if (!pinned) return;
-    const p = clamp((y - top) / distance);
-    if (p === lastP) return; // fora da seção: nada muda
-    lastP = p;
-    // posição contínua na lista (0 = primeira frase na linha), com uma pausa
-    // na primeira e na última
-    const pos = clamp(p * (n - 1 + 2 * hold) - hold, 0, n - 1);
-    // Cada troca acontece no meio do caminho entre duas frases (de 25% a 75%):
-    // antes e depois disso a frase acesa fica parada logo abaixo da frase fixa.
-    // "lit" diz quanto cada frase está acesa (1 = na linha).
-    const lit = items.map((_, i) => 1 - smooth(0.25, 0.75, Math.abs(pos - i)));
-    const scale = lit.map((v) => minScale + (1 - minScale) * v);
-    // empilha as frases já no tamanho atual (sem buracos entre elas)
-    let acc = 0;
-    const ys = heights.map((h, i) => {
-      const y0 = acc;
-      acc += (h + gap) * scale[i];
-      return y0;
-    });
-    // a primeira linha da frase acesa fica centrada na linha; a lista anda
-    // junto com a troca (mesma curva), então tudo se move como uma coisa só
-    const mid = (i) => ys[i] + (line * scale[i]) / 2;
-    const k = Math.min(n - 2, Math.floor(pos));
-    const e = smooth(0.25, 0.75, pos - k);
-    const off = anchor - (mid(k) + (mid(k + 1) - mid(k)) * e);
-    items.forEach((it, i) => {
-      const t = `translate(0, ${(ys[i] + off).toFixed(1)}px) scale(${scale[i].toFixed(3)})`;
-      // a que sai apaga subindo, antes de chegar à frase fixa
-      const fade = i < pos ? 1 - smooth(0, 0.6, 1 - lit[i]) : 1;
-      const o = Math.round((MIN_OPACITY + (1 - MIN_OPACITY) * lit[i]) * fade * 100) / 100;
-      if (t !== last[i].t) {
-        it.style.transform = t;
-        last[i].t = t;
-      }
-      if (o !== last[i].o) {
-        it.style.opacity = o;
-        last[i].o = o;
-      }
-    });
-  });
-}
-
-/* ---------------------------------------------------------
    Serviços: sanfona (iverson.inc). Um aberto por vez. A altura do
    item que fecha e a do que abre mudam juntas no mesmo quadro; o
    conteúdo de cada item é uma camada própria (.svc__inner), então
@@ -671,9 +574,76 @@ function initServices() {
     finish = cleanup;
   };
 
+  const open = (target) => {
+    if (!target.classList.contains('is-open')) toggle(target);
+  };
+
+  // Scroll: a seção fica presa e cada serviço abre na sua vez, de cima para
+  // baixo (e volta ao subir). Com movimento reduzido, só o clique.
+  const section = document.querySelector('[data-svc-section]');
+  const stage = section?.querySelector('[data-svc-stage]');
+  const spacer = section?.querySelector('[data-svc-spacer]');
+  const n = items.length;
+  const HOLD = 0.3; // pausa no primeiro e no último, em "vezes"
+  let pinned = false;
+  let pinStart = 0;
+  let travel = 1;
+  let current = items.findIndex((it) => it.classList.contains('is-open'));
+  let forcedY = null; // rolagem pedida por um clique: não abre os do meio do caminho
+  const yFor = (i) => pinStart + ((i + HOLD) / (n - 1 + 2 * HOLD)) * travel;
+
+  if (stage && spacer && n > 1) {
+    measurers.push(() => {
+      pinned = !reducedMotion.matches;
+      section.classList.toggle('is-pinned', pinned);
+      if (!pinned) {
+        spacer.style.height = '';
+        stage.style.top = '';
+        return;
+      }
+      const headerH = document.querySelector('[data-header]')?.offsetHeight || 0;
+      const stageH = stage.offsetHeight;
+      const stickyTop = Math.min(headerH, vh - stageH);
+      stage.style.top = `${stickyTop}px`;
+      travel = Math.round(vh * 0.5 * (n - 1 + 2 * HOLD));
+      spacer.style.height = `${travel}px`;
+      // topo da lista sem estar presa (o título vem antes e rola normalmente).
+      // O offsetTop da lista muda quando ela está presa; o do espaçador, não.
+      const naturalTop = spacer.offsetTop - stageH;
+      pinStart = section.getBoundingClientRect().top + window.scrollY + naturalTop - stickyTop;
+    });
+    const stopForced = () => (forcedY = null);
+    window.addEventListener('wheel', stopForced, { passive: true });
+    window.addEventListener('touchstart', stopForced, { passive: true });
+    updaters.push((y) => {
+      if (!pinned) return;
+      if (forcedY !== null) {
+        if (Math.abs(y - forcedY) > 3) return;
+        forcedY = null;
+      }
+      const pos = ((y - pinStart) / travel) * (n - 1 + 2 * HOLD) - HOLD;
+      const i = clamp(Math.round(pos), 0, n - 1);
+      if (i !== current) {
+        current = i;
+        open(items[i]);
+      }
+    });
+  }
+
   list.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-svc-btn]');
-    if (btn) toggle(btn.closest('[data-svc-item]'));
+    if (!btn) return;
+    const item = btn.closest('[data-svc-item]');
+    if (!pinned) {
+      toggle(item);
+      return;
+    }
+    // rola até a vez desse serviço e já abre ele
+    const i = items.indexOf(item);
+    current = i;
+    open(item);
+    forcedY = Math.round(yFor(i));
+    scrollToY(forcedY);
   });
 
   // As imagens dos itens fechados ficam escondidas (o "warm-up" geral não as vê).
@@ -701,7 +671,7 @@ function initServices() {
    Revelação ao entrar na tela (repete a cada passagem)
    --------------------------------------------------------- */
 function initReveal() {
-  const targets = document.querySelectorAll('.reveal, .reveal-chars, [data-logo-reveal]');
+  const targets = document.querySelectorAll('.reveal, .reveal-chars, [data-logo-reveal], [data-draw]');
   // Hero (descrição e marquee): a entrada da abertura se repete quando voltam à tela
   const replays = document.querySelectorAll('[data-replay]');
   if (!('IntersectionObserver' in window) || reducedMotion.matches) {
@@ -877,6 +847,14 @@ function initSmoothScroll() {
   window.addEventListener('pointerdown', stop);
   window.addEventListener('resize', stop);
   stopSmooth = stop;
+  scrollToY = (y) => {
+    if (!raf) current = target = window.scrollY;
+    target = clamp(y, 0, maxScroll());
+    if (!raf) {
+      smoothing = true;
+      raf = requestAnimationFrame(step);
+    }
+  };
 }
 
 /* ---------------------------------------------------------
@@ -954,7 +932,6 @@ initMenu();
 initHeaderHide();
 initReel();
 initScrollWords();
-initPhrases();
 initServices();
 initReveal();
 initCursorPill();
