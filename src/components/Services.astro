@@ -1,43 +1,68 @@
 ---
 import { Picture } from 'astro:assets';
 import { services } from '../data/content.js';
+import SplitChars from './SplitChars.astro';
+
+// Layout e comportamento do iverson.inc (seção Services): título grande à direita
+// e uma lista em sanfona. Só um serviço fica aberto por vez; o aberto mostra a
+// descrição e as tags embaixo à esquerda e as imagens à direita, alinhadas ao nome.
+const pic = { formats: ['avif', 'webp'], fallbackFormat: 'jpg', quality: 85, loading: 'lazy', decoding: 'async' };
 ---
 
 <section class="services" id="servicos" aria-labelledby="services-title">
-  <h2 id="services-title" class="visually-hidden">Serviços</h2>
+  <h2 class="services__title reveal-chars" id="services-title" data-reveal><SplitChars text="Serviços" /></h2>
 
-  <!--
-    Cards empilhados (mesma mecânica do Prolab):
-    cada card é sticky (top 0 / 50 / 100 / 150px), 100vh de altura, com 65px de
-    intervalo entre eles. Conforme a seção rola, cada card encolhe (escala final
-    0.4 / 0.5 / 0.6 / 0.7) e sobe até 100px. O título de cada card aparece letra
-    por letra quando o card entra na tela.
-  -->
-  <ol class="services__stack" data-stack>
+  <ol class="svc" role="list" data-svc>
     {
       services.map((s, i) => (
-        <li class={`service-card${s.position ? ' service-card--top' : ''}`} data-card={i}>
-          <div class="service-card__frame">
-            <Picture
-              class="service-card__img"
-              src={s.image}
-              alt=""
-              formats={['avif', 'webp']}
-              fallbackFormat="jpg"
-              quality={85}
-              widths={[640, 960, 1280, 1600, 1920, 2400, 2880, 3440, 4080]}
-              sizes="100vw"
-              loading="lazy"
-              decoding="async"
-            />
-            <span class="service-card__shade" aria-hidden="true" />
-            <div class="service-card__label" data-label>
-              <h3 class="service-card__name" data-split="name">{s.name}</h3>
+        <li class={`svc__item reveal reveal-d${i % 3}${i === 0 ? ' is-open is-expanded' : ''}`} data-svc-item>
+          <div class="svc__inner">
+          <h3 class="svc__head">
+            <button
+              class="svc__btn"
+              type="button"
+              id={`svc-btn-${i}`}
+              aria-expanded={i === 0 ? 'true' : 'false'}
+              aria-controls={`svc-panel-${i}`}
+              data-svc-btn
+            >
+              <span class="svc__num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+              <span class="svc__name">{s.name}</span>
+            </button>
+          </h3>
+          <div class="svc__body" id={`svc-panel-${i}`} role="region" aria-labelledby={`svc-btn-${i}`}>
+            <div class="svc__media">
+              <Picture
+                {...pic}
+                class="svc__img svc__img--main"
+                src={s.image}
+                alt={s.alt}
+                widths={[520, 780, 1040, 1300, 1560, 2080]}
+                sizes="(max-width: 760px) 70vw, 36vw"
+              />
+              {s.details.map((d) => (
+                <Picture
+                  {...pic}
+                  class="svc__img"
+                  src={d}
+                  alt=""
+                  widths={[260, 390, 520, 780, 1040]}
+                  sizes="(max-width: 760px) 34vw, 18vw"
+                />
+              ))}
             </div>
+            <div class="svc__text">
+              <p class="svc__desc">{s.description}</p>
+              <ul class="svc__tags" role="list">
+                {s.tags.map((t) => (
+                  <li>{t}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
           </div>
         </li>
       ))
     }
   </ol>
-
 </section>
