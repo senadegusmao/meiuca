@@ -425,14 +425,13 @@ function initReel() {
   el.addEventListener('click', (e) => {
     if (e.target.closest('[data-reel-close]')) close();
   });
-  // Em Serviços o título dos cards fica no canto inferior direito: o reel
-  // desce e sai da frente enquanto os cards estão na tela
-  const stack = document.querySelector('[data-stack]');
-  if (stack && 'IntersectionObserver' in window) {
-    // só a faixa de baixo da tela conta (onde o reel fica)
+  // Fica fixo durante todo o scroll e desce/some quando o footer chega
+  // (mesmo ponto do header: topo do footer a 65% da tela)
+  const footer = document.querySelector('.footer');
+  if (footer && 'IntersectionObserver' in window) {
     new IntersectionObserver(([e]) => el.classList.toggle('is-tucked', e.isIntersecting), {
-      rootMargin: '-80% 0px 0px 0px',
-    }).observe(stack);
+      rootMargin: '0px 0px -35% 0px',
+    }).observe(footer);
   }
   // Esc fecha o reel antes do menu
   window.addEventListener(
@@ -445,6 +444,19 @@ function initReel() {
     },
     true,
   );
+}
+
+/* ---------------------------------------------------------
+   Header some quando o footer chega e volta ao subir. Com o foco
+   do teclado nele (ou com o menu aberto) ele reaparece (CSS).
+   --------------------------------------------------------- */
+function initHeaderHide() {
+  const header = document.querySelector('[data-header]');
+  const footer = document.querySelector('.footer');
+  if (!header || !footer || !('IntersectionObserver' in window)) return;
+  new IntersectionObserver(([e]) => header.classList.toggle('is-hidden', e.isIntersecting), {
+    rootMargin: '0px 0px -35% 0px',
+  }).observe(footer);
 }
 
 /* ---------------------------------------------------------
@@ -490,143 +502,199 @@ function initScrollWords() {
 }
 
 /* ---------------------------------------------------------
-   10 Anos: scroll "travado" enquanto as frases trocam
+   10 Anos (módulo Marques do esrbespoke.au): a tela fica presa e a
+   lista de frases sobe pela linha logo abaixo da frase fixa. A frase
+   na linha acende e cresce; a que sai apaga subindo; as próximas ficam
+   menores e apagadas. Tudo ligado ao scroll e só com transform/opacity.
    --------------------------------------------------------- */
 function initPhrases() {
   const section = document.querySelector('[data-phrases]');
   if (!section) return;
-  const text = section.querySelector('[data-phrase-text]');
-  const phrases = [...section.querySelectorAll('[data-phrase]')];
+  const list = section.querySelector('[data-phrase-list]');
+  const items = [...section.querySelectorAll('[data-phrase]')];
+  const n = items.length;
+  if (n < 2) return;
+  section.style.setProperty('--ten-n', n);
+  const smooth = (e0, e1, x) => {
+    const t = clamp((x - e0) / (e1 - e0));
+    return t * t * (3 - 2 * t);
+  };
+  const MIN_OPACITY = 0.2;
 
+  let pinned = false;
   let top = 0;
   let distance = 1;
-  let current = -1;
+  let hold = 0.3;
+  let minScale = 0.5;
+  let anchor = 0;
+  let line = 80;
+  let gap = 12;
+  let heights = [];
+  let lastP = -1;
+  const last = items.map(() => ({ t: '', o: -1 }));
 
   measurers.push(() => {
-    const r = section.getBoundingClientRect();
-    top = r.top + window.scrollY;
+    // Presa só com movimento liberado (o CSS decide; sem isso a lista fica parada)
+    pinned = !reducedMotion.matches && getComputedStyle(list).position === 'absolute';
+    lastP = -1;
+    if (!pinned) {
+      items.forEach((it, i) => {
+        it.style.removeProperty('transform');
+        it.style.removeProperty('opacity');
+        last[i].t = '';
+        last[i].o = -1;
+      });
+      return;
+    }
+    const cs = getComputedStyle(section);
+    hold = parseFloat(cs.getPropertyValue('--ten-hold')) || 0;
+    minScale = parseFloat(cs.getPropertyValue('--ten-min')) || 0.5;
+    top = section.getBoundingClientRect().top + window.scrollY;
     distance = Math.max(1, section.offsetHeight - vh);
+    anchor = list.clientHeight * (parseFloat(cs.getPropertyValue('--ten-anchor')) || 0.45);
+    line = parseFloat(getComputedStyle(list).fontSize) || 80;
+    gap = line * 0.3; // espaço depois de cada frase, proporcional ao tamanho dela
+    heights = items.map((it) => it.offsetHeight);
   });
 
-  const show = (next) => {
-    if (next === current) return;
-    const prev = phrases[current];
-    if (prev) {
-      prev.classList.remove('is-active');
-      prev.classList.add('is-leaving');
-      setTimeout(() => prev.classList.remove('is-leaving'), 900);
-    }
-    const target = phrases[next];
-    target.classList.remove('is-leaving');
-    // força o estado inicial (abaixo) antes de animar a entrada
-    void target.offsetWidth;
-    target.classList.add('is-active');
-    current = next;
-  };
-
-  // Entrada e saída do módulo: a parte fixa surge letra por letra e o
-  // complemento vem logo depois. Ao sair da tela, tudo volta ao começo.
-  if (!('IntersectionObserver' in window) || reducedMotion.matches) {
-    text.classList.add('is-in');
-  } else {
-    let enterTimer;
-    new IntersectionObserver(
-      ([e]) => {
-        if (!e.isIntersecting || text.classList.contains('is-in')) return;
-        text.classList.remove('is-out');
-        text.classList.add('is-in', 'is-entering');
-        clearTimeout(enterTimer);
-        enterTimer = setTimeout(() => text.classList.remove('is-entering'), 1600);
-      },
-      { rootMargin: '0px 0px -12% 0px', threshold: 0.01 },
-    ).observe(text);
-    new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) return;
-      text.classList.remove('is-in', 'is-entering');
-      text.classList.add('is-out');
-    }).observe(text);
-  }
-
-  let lastP = -1;
   updaters.push((y) => {
+    if (!pinned) return;
     const p = clamp((y - top) / distance);
     if (p === lastP) return; // fora da seção: nada muda
     lastP = p;
-    show(Math.min(phrases.length - 1, Math.floor(p * phrases.length)));
+    // posição contínua na lista (0 = primeira frase na linha), com uma pausa
+    // na primeira e na última
+    const pos = clamp(p * (n - 1 + 2 * hold) - hold, 0, n - 1);
+    // Cada troca acontece no meio do caminho entre duas frases (de 25% a 75%):
+    // antes e depois disso a frase acesa fica parada logo abaixo da frase fixa.
+    // "lit" diz quanto cada frase está acesa (1 = na linha).
+    const lit = items.map((_, i) => 1 - smooth(0.25, 0.75, Math.abs(pos - i)));
+    const scale = lit.map((v) => minScale + (1 - minScale) * v);
+    // empilha as frases já no tamanho atual (sem buracos entre elas)
+    let acc = 0;
+    const ys = heights.map((h, i) => {
+      const y0 = acc;
+      acc += (h + gap) * scale[i];
+      return y0;
+    });
+    // a primeira linha da frase acesa fica centrada na linha; a lista anda
+    // junto com a troca (mesma curva), então tudo se move como uma coisa só
+    const mid = (i) => ys[i] + (line * scale[i]) / 2;
+    const k = Math.min(n - 2, Math.floor(pos));
+    const e = smooth(0.25, 0.75, pos - k);
+    const off = anchor - (mid(k) + (mid(k + 1) - mid(k)) * e);
+    items.forEach((it, i) => {
+      const t = `translate(0, ${(ys[i] + off).toFixed(1)}px) scale(${scale[i].toFixed(3)})`;
+      // a que sai apaga subindo, antes de chegar à frase fixa
+      const fade = i < pos ? 1 - smooth(0, 0.6, 1 - lit[i]) : 1;
+      const o = Math.round((MIN_OPACITY + (1 - MIN_OPACITY) * lit[i]) * fade * 100) / 100;
+      if (t !== last[i].t) {
+        it.style.transform = t;
+        last[i].t = t;
+      }
+      if (o !== last[i].o) {
+        it.style.opacity = o;
+        last[i].o = o;
+      }
+    });
   });
 }
 
 /* ---------------------------------------------------------
-   Serviços: cards empilhados (mesma mecânica do Prolab)
-   - cada card é sticky (CSS); aqui só calculamos escala e deslocamento
-   - escala final por card: 0.4, 0.5, 0.6, 0.7 (o de trás encolhe mais)
-   - todos sobem até ~11% da altura da tela ao longo da seção
+   Serviços: sanfona (iverson.inc). Um aberto por vez. A altura do
+   item que fecha e a do que abre mudam juntas no mesmo quadro; o
+   conteúdo de cada item é uma camada própria (.svc__inner), então
+   só o recorte muda e nada é redesenhado durante a animação.
    --------------------------------------------------------- */
-function splitChars(el, baseDelay) {
-  const text = el.textContent.trim();
-  el.setAttribute('aria-label', text);
-  el.textContent = '';
-  [...text].forEach((char, i) => {
-    const span = document.createElement('span');
-    span.className = 'ch';
-    span.setAttribute('aria-hidden', 'true');
-    span.textContent = char === ' ' ? '\u00a0' : char;
-    span.style.transitionDelay = `${(baseDelay + i * 0.03).toFixed(2)}s`;
-    el.appendChild(span);
+function initServices() {
+  const list = document.querySelector('[data-svc]');
+  if (!list) return;
+  const items = [...list.querySelectorAll('[data-svc-item]')];
+  // Altura aberta igual para todos (a do maior): ao trocar de item, o total da
+  // lista não muda e o que está abaixo fica parado
+  measurers.push(() => {
+    list.style.removeProperty('--svc-open');
+    const was = items.map((it) => it.classList.contains('is-expanded'));
+    items.forEach((it) => it.classList.add('is-expanded'));
+    const max = Math.max(...items.map((it) => it.offsetHeight));
+    items.forEach((it, i) => it.classList.toggle('is-expanded', was[i]));
+    list.style.setProperty('--svc-open', `${max}px`);
   });
-}
+  const ease = (t) => 1 - Math.pow(1 - t, 5); // ≈ cubic-bezier(0.22, 1, 0.36, 1)
+  const DURATION = 700;
+  let finish = null;
 
-function initStack() {
-  const stack = document.querySelector('[data-stack]');
-  if (!stack) return;
-  const cards = [...stack.querySelectorAll('[data-card]')];
+  const setAria = (item, open) => item.querySelector('[data-svc-btn]').setAttribute('aria-expanded', String(open));
 
-  cards.forEach((card) => {
-    card.querySelectorAll('[data-split="name"]').forEach((el) => splitChars(el, 0));
+  const toggle = (target) => {
+    finish?.(); // termina na hora uma animação em andamento
+    const closing = items.find((it) => it.classList.contains('is-open')) || null;
+    const opening = target === closing ? null : target;
+    // alturas de partida (como estão na tela agora)
+    const c0 = closing?.offsetHeight ?? 0;
+    const o0 = opening?.offsetHeight ?? 0;
+    if (closing) {
+      closing.classList.remove('is-open', 'is-expanded');
+      setAria(closing, false);
+    }
+    if (opening) {
+      opening.classList.add('is-open', 'is-expanded');
+      setAria(opening, true);
+    }
+    if (reducedMotion.matches) return;
+    // alturas de chegada (pelo CSS)
+    const c1 = closing?.offsetHeight ?? 0;
+    const o1 = opening?.offsetHeight ?? 0;
+    root.classList.add('svc-anim');
+    if (opening) opening.style.minHeight = '0px'; // a altura mínima de aberto só vale no fim
+    const render = (e) => {
+      if (closing) closing.style.height = `${(c0 + (c1 - c0) * e).toFixed(2)}px`;
+      if (opening) opening.style.height = `${(o0 + (o1 - o0) * e).toFixed(2)}px`;
+    };
+    const cleanup = () => {
+      cancelAnimationFrame(raf);
+      finish = null;
+      if (closing) closing.style.height = '';
+      if (opening) opening.style.height = opening.style.minHeight = '';
+      root.classList.remove('svc-anim');
+      measure(); // as seções abaixo podem ter mudado de lugar
+    };
+    render(0);
+    let t0 = 0;
+    let raf = requestAnimationFrame(function tick(now) {
+      t0 ||= now;
+      const t = Math.min(1, (now - t0) / DURATION);
+      render(ease(t));
+      if (t < 1) raf = requestAnimationFrame(tick);
+      else cleanup();
+    });
+    finish = cleanup;
+  };
+
+  list.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-svc-btn]');
+    if (btn) toggle(btn.closest('[data-svc-item]'));
   });
 
-  // O título anima quando o card entra na tela e reinicia quando ele sai.
+  // As imagens dos itens fechados ficam escondidas (o "warm-up" geral não as vê).
+  // Quando a lista se aproxima, todas carregam e decodificam: abrir um item
+  // não precisa decodificar nada no meio da animação.
   if ('IntersectionObserver' in window) {
     const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.intersectionRatio >= 0.45) e.target.classList.add('is-in');
-          else if (!e.isIntersecting) e.target.classList.remove('is-in');
+      ([e]) => {
+        if (!e.isIntersecting) return;
+        io.disconnect();
+        list.querySelectorAll('img').forEach((img) => {
+          img.loading = 'eager';
+          const decode = () => img.decode?.().catch(() => {});
+          if (img.complete) decode();
+          else img.addEventListener('load', decode, { once: true });
         });
       },
-      { threshold: [0, 0.45] },
+      { rootMargin: '100% 0px' },
     );
-    cards.forEach((c) => io.observe(c));
-  } else {
-    cards.forEach((c) => c.classList.add('is-in'));
+    io.observe(list);
   }
-
-  let top = 0;
-  let range = 1;
-  measurers.push(() => {
-    const r = stack.getBoundingClientRect();
-    top = r.top + window.scrollY;
-    range = Math.max(1, stack.offsetHeight);
-  });
-
-  let lastKey = '';
-  updaters.push((y) => {
-    if (reducedMotion.matches) {
-      cards.forEach((c) => (c.style.transform = ''));
-      return;
-    }
-    const p = clamp((y - top) / range);
-    // Fora da seção (antes ou depois), não reescreve nada
-    const key = `${p.toFixed(4)}|${vh}`;
-    if (key === lastKey) return;
-    lastKey = key;
-    const ty = -(vh / 9) * p; // 100px numa tela de 900px
-    cards.forEach((card, i) => {
-      const endScale = Math.min(0.9, 0.4 + 0.1 * i);
-      const s = 1 - (1 - endScale) * p;
-      card.style.transform = `translate3d(0, ${ty.toFixed(2)}px, 0) scale(${s.toFixed(4)})`;
-    });
-  });
 }
 
 /* ---------------------------------------------------------
@@ -714,56 +782,6 @@ function initCursorPill() {
     });
     t.addEventListener('pointerleave', () => pill.classList.remove('is-on'));
   });
-}
-
-/* ---------------------------------------------------------
-   Clientes: o nome acende e, se o cliente tiver imagem,
-   a prévia aparece ao lado do cursor
-   --------------------------------------------------------- */
-function initClients() {
-  const section = document.querySelector('[data-clients]');
-  if (!section || !window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
-  const cursor = section.querySelector('[data-clients-cursor]');
-  const list = section.querySelector('.clients__list');
-  const shots = new Map([...section.querySelectorAll('[data-shot]')].map((el) => [el.dataset.shot, el]));
-  let x = 0;
-  let y = 0;
-  let cx = 0;
-  let cy = 0;
-  let raf = 0;
-  let current = null;
-
-  const follow = () => {
-    const k = reducedMotion.matches ? 1 : 0.25;
-    cx += (x - cx) * k;
-    cy += (y - cy) * k;
-    cursor.style.transform = `translate3d(${cx.toFixed(1)}px, ${cy.toFixed(1)}px, 0)`;
-    raf = Math.abs(x - cx) + Math.abs(y - cy) > 0.3 ? requestAnimationFrame(follow) : 0;
-  };
-  const show = (key) => {
-    if (current === key) return;
-    if (current != null) shots.get(current)?.classList.remove('is-on');
-    current = key;
-    if (key != null) shots.get(key)?.classList.add('is-on');
-  };
-
-  list.addEventListener('pointerenter', (e) => {
-    cx = x = e.clientX;
-    cy = y = e.clientY;
-    follow();
-  });
-  list.addEventListener('pointerleave', () => show(null));
-  list.addEventListener(
-    'pointermove',
-    (e) => {
-      x = e.clientX;
-      y = e.clientY;
-      if (!raf) raf = requestAnimationFrame(follow);
-      const item = e.target.closest('.clients__item');
-      show(item?.dataset.client ?? null);
-    },
-    { passive: true },
-  );
 }
 
 /* ---------------------------------------------------------
@@ -933,13 +951,13 @@ const requestUpdate = () => {
 };
 
 initMenu();
+initHeaderHide();
 initReel();
 initScrollWords();
 initPhrases();
-initStack();
+initServices();
 initReveal();
 initCursorPill();
-initClients();
 initMarquee();
 initWarmup();
 initNewsletter();
