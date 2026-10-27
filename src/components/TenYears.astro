@@ -2,19 +2,46 @@
 import { tenYears } from '../data/content.js';
 import SplitChars from './SplitChars.astro';
 
-// Módulo Marques do esrbespoke.au, sem imagem. Hierarquia em três níveis:
-// a frase fixa (40px, branca) em cima; logo abaixo, a frase acesa (80px,
-// branca), que completa a frase fixa; e as próximas, menores e apagadas.
-// Com o scroll a lista sobe: a acesa apaga subindo e a próxima cresce no
-// lugar dela. Sem JS (ou com movimento reduzido) a lista fica parada, com
-// todas as frases visíveis.
+// 10 Anos do Figma (nó 809:493): container azul (#001EFF, 1360×671 no
+// desktop) com o texto de 32px no centro e um tracejado de fundo (2 linhas
+// verticais e 3 círculos de 774px). Quando o container entra na tela, o
+// tracejado se desenha linha por linha: cada traço é revelado por uma máscara
+// (o desenho anima a máscara, o tracejado em si não muda).
+// Medidas em coordenadas do Figma; o grupo foi centralizado no container
+// (no Figma estava 16px à esquerda do centro).
+const W = 1360;
+const H = 671;
+const cx = W / 2;
+const cy = H / 2;
+const r = 387;
+const gapY = 468.15; // distância entre os centros dos círculos
+const lines = [cx - 530, cx + 530];
+const circles = [cy, cy - gapY, cy + gapY]; // ordem do desenho: meio, cima, baixo
+// O de baixo só aparece em cima (um arco de ~140°): ele começa na ponta
+// esquerda desse arco e desenha só o arco, de uma vez (sem a parte de fora).
 ---
 
-<section class="ten" aria-labelledby="ten-title" data-phrases>
-  <div class="ten__stage">
-    <h2 class="ten__lead reveal-chars" id="ten-title" data-reveal><SplitChars text={tenYears.lead} /></h2>
-    <ul class="ten__list reveal" role="list" data-phrase-list>
-      {tenYears.phrases.map((p) => <li class="ten__item" data-phrase>{p}</li>)}
-    </ul>
+<section class="ten" aria-labelledby="ten-title">
+  <div class="ten__box" data-draw>
+    <svg class="ten__bg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+      <defs>
+        <mask id="ten-draw" maskUnits="userSpaceOnUse" x="0" y="0" width={W} height={H}>
+          {lines.map((x, i) => (
+            <line class={`ten__draw td${i}`} x1={x} y1="0" x2={x} y2={H} pathLength="1" />
+          ))}
+          {circles.map((y, i) => (
+            <circle class={`ten__draw td${i + 2}`} cx={cx} cy={y} r={r} pathLength="1" transform={`rotate(${i === 2 ? -160 : -90} ${cx} ${y})`} />
+          ))}
+        </mask>
+      </defs>
+      <g class="ten__dash" mask="url(#ten-draw)">
+        {lines.map((x) => <line x1={x} y1="0" x2={x} y2={H} />)}
+        {circles.map((y) => <circle cx={cx} cy={y} r={r} />)}
+      </g>
+    </svg>
+    <h2 class="ten__text reveal-chars" id="ten-title" data-reveal>
+      <SplitChars text={tenYears.lines[0]} /><br class="ten__br" />
+      <SplitChars text={tenYears.lines[1]} />
+    </h2>
   </div>
 </section>
