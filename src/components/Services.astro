@@ -3,19 +3,22 @@ import { Picture } from 'astro:assets';
 import { services } from '../data/content.js';
 import SplitChars from './SplitChars.astro';
 
-// Layout e comportamento do iverson.inc (seção Services): título grande à direita
-// e uma lista em sanfona. Só um serviço fica aberto por vez; o aberto mostra a
-// descrição e as tags embaixo à esquerda e as imagens à direita, alinhadas ao nome.
+// Layout do iverson.inc (seção Services): lista em sanfona. Só um serviço fica
+// aberto por vez; o aberto mostra a descrição e as tags embaixo à esquerda e as
+// imagens à direita, alinhadas ao nome. Com o scroll, a seção fica presa e cada
+// serviço abre na sua vez (clicar num nome rola até a vez dele).
 const pic = { formats: ['avif', 'webp'], fallbackFormat: 'jpg', quality: 85, loading: 'lazy', decoding: 'async' };
 ---
 
-<section class="services" id="servicos" aria-labelledby="services-title">
+<section class="services" id="servicos" aria-labelledby="services-title" data-svc-section>
   <h2 class="services__title reveal-chars" id="services-title" data-reveal><SplitChars text="Serviços" /></h2>
+  <!-- A lista fica presa enquanto o scroll abre um serviço por vez (initServices) -->
+  <div class="services__stage" data-svc-stage>
 
-  <ol class="svc" role="list" data-svc>
+  <ol class="svc reveal" role="list" data-svc>
     {
       services.map((s, i) => (
-        <li class={`svc__item reveal reveal-d${i % 3}${i === 0 ? ' is-open is-expanded' : ''}`} data-svc-item>
+        <li class={`svc__item${i === 0 ? ' is-open is-expanded' : ''}`} data-svc-item>
           <div class="svc__inner">
           <h3 class="svc__head">
             <button
@@ -65,4 +68,6 @@ const pic = { formats: ['avif', 'webp'], fallbackFormat: 'jpg', quality: 85, loa
       ))
     }
   </ol>
+  </div>
+  <div class="services__spacer" aria-hidden="true" data-svc-spacer></div>
 </section>
