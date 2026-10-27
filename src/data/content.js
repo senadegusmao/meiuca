@@ -36,19 +36,11 @@ export const heroImages = [
   { src: hero5, size: 'b', alt: 'Relógio inteligente exibindo saldo de investimentos' },
 ];
 
-// 10 Anos (módulo Marques do esrbespoke.au): frase fixa em cima e, embaixo,
-// as frases que completam a ideia; uma por vez acende e cresce com o scroll
+// 10 Anos (Figma, "Home (alterações Rafa 15.10)", nó 809:493): texto dentro
+// do container azul, com o tracejado de fundo se desenhando
 export const tenYears = {
-  // A frase fixa termina em "a:" e as frases de baixo completam a ideia
-  // (por isso começam sem o "a").
-  lead: 'Há mais de 10 anos ajudamos grandes empresas a:',
-  phrases: [
-    'lidar com desafios complexos de design',
-    'reimaginar a experiência de um serviço',
-    'evoluir seu design system',
-    'repensar processos de design com IA',
-    'sistematizar a governança da marca',
-  ],
+  // duas linhas, como no Figma (no celular o texto quebra sozinho)
+  lines: ['Há 10 anos ajudando grandes empresas a reimaginar', 'a experiência de um produto'],
 };
 
 // Serviços (layout do iverson.inc): lista em sanfona. Cada serviço tem uma imagem
