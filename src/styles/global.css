@@ -983,95 +983,89 @@ body.is-locked .site-header.is-hidden {
 }
 
 /* =========================================================
-   10 Anos (módulo Marques do esrbespoke.au, sem imagem)
-   Hierarquia em três níveis, tudo em Archivo Light e alinhado à esquerda:
-   1. a frase acesa: 80px (o tamanho do Figma; a frase mais longa ainda
-      cabe numa linha), branca;
-   2. a frase fixa: 40px, branca, logo acima dela (as duas formam uma
-      frase só: "…grandes empresas a: reimaginar…");
-   3. as próximas: 40px (metade da acesa) e 20% de opacidade.
-   Com JS, a tela fica presa (sticky) e a lista sobe pela linha da frase
-   acesa: a que sai apaga subindo e a próxima cresce no lugar dela. Só
-   transform e opacity mudam (nada de layout no scroll).
+   10 Anos (Figma, nó 809:493): container azul com o texto no centro e o
+   tracejado de fundo (1px branco, traço e espaço de 4,16px) que se desenha
+   linha por linha quando o container entra na tela (e de novo a cada
+   passagem, como as outras revelações). O desenho anima só a máscara.
    ========================================================= */
 
 .ten {
-  --ten-step: 28svh; /* rolagem por frase */
-  --ten-hold: 0.3; /* pausa na primeira e na última, em frases */
-  --ten-anchor: 0.45; /* linha da frase acesa (fração da altura da tela) */
-  --ten-min: 0.5; /* tamanho das próximas, em relação à acesa */
-  --ten-big: clamp(32px, 5.56vw, 80px); /* frase acesa */
-  --ten-lead: clamp(20px, 2.78vw, 40px); /* frase fixa */
-  --ten-gap: calc(var(--ten-big) * 0.4); /* entre a frase fixa e a acesa */
+  padding: var(--space-256) var(--gutter);
+}
+.ten__box {
   position: relative;
-  padding: var(--space-256) 0;
-}
-.ten__stage {
-  padding: 0 var(--gutter);
-  line-height: 1;
-  letter-spacing: -0.03em;
-  font-weight: 300;
-}
-.ten__lead {
-  margin-bottom: var(--ten-gap);
-  font: inherit;
-  font-size: var(--ten-lead);
-  line-height: 1.1;
-  letter-spacing: inherit;
-  /* em duas linhas: "Há mais de 10 anos ajudamos / grandes empresas a:" */
-  max-width: 14em;
-}
-.ten__list {
   display: grid;
-  gap: 0.3em;
-  font-size: var(--ten-big);
+  place-items: center;
+  /* 1360×671 no desktop (proporção do Figma); no celular fica com 460px de
+     altura e o tracejado é cortado nas laterais */
+  height: max(460px, calc((100vw - 2 * var(--gutter)) * 671 / 1360));
+  overflow: hidden;
+  background: #001eff;
 }
-.ten__item {
-  transform-origin: 0 0;
+.ten__bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
-@media (prefers-reduced-motion: no-preference) {
-  .js .ten {
-    height: calc(100svh + (var(--ten-n, 5) - 1 + 2 * var(--ten-hold)) * var(--ten-step));
-    padding: 0;
-  }
-  .js .ten__stage {
-    position: sticky;
-    top: 0;
-    height: 100svh;
-  }
-  /* A frase fixa termina logo acima da linha da frase acesa */
-  .js .ten__lead {
-    position: absolute;
-    left: var(--gutter);
-    right: var(--gutter);
-    bottom: calc((1 - var(--ten-anchor)) * 100svh + var(--ten-big) / 2 + var(--ten-gap));
-    margin: 0;
-  }
-  /* A lista ocupa a tela; posição, tamanho e opacidade de cada frase vêm
-     do JS (initPhrases). As que já passaram ficam invisíveis. */
-  .js .ten__list {
-    position: absolute;
-    inset: 0 var(--gutter);
-    display: block;
-    overflow: clip;
-    pointer-events: none;
-  }
-  .js .ten__item {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    opacity: 0.2;
-    transform: translateY(calc(var(--ten-anchor) * 100svh)) scale(var(--ten-min));
-  }
+.ten__dash {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1;
+  stroke-dasharray: 4.16 4.16;
+  vector-effect: non-scaling-stroke;
 }
-/* No celular as próximas ficam um pouco maiores (19px), para continuar legíveis */
+.ten__draw {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 8;
+  stroke-dasharray: 1 1;
+  stroke-dashoffset: 1;
+}
+/* Ordem: linha da esquerda, da direita, círculo do meio, de cima, de baixo */
+.js [data-draw].is-in .ten__draw {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 1.4s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.js [data-draw].is-in .td1 {
+  transition-delay: 0.3s;
+}
+.js [data-draw].is-in .td2 {
+  transition-duration: 1.8s;
+  transition-delay: 0.6s;
+}
+.js [data-draw].is-in .td3 {
+  transition-duration: 1.8s;
+  transition-delay: 1s;
+}
+.js [data-draw].is-in .td4 {
+  transition-duration: 1.8s;
+  transition-delay: 1.4s;
+}
+/* Círculo de baixo: um traço de 40% da volta (cobre o arco visível, ~39%),
+   desenhado inteiro de uma vez, da esquerda para a direita */
+.ten__draw.td4 {
+  stroke-dasharray: 0.4 1;
+  stroke-dashoffset: 0.4;
+}
 @media (max-width: 760px) {
-  .ten {
-    --ten-anchor: 0.4;
-    --ten-gap: 24px;
-    --ten-min: 0.6;
+  .ten__br {
+    display: none;
   }
+}
+/* Sem JS: o tracejado já aparece pronto */
+html:not(.js) .ten__draw {
+  stroke-dashoffset: 0;
+}
+.ten__text {
+  position: relative;
+  max-width: calc(28.7em + 48px); /* 918px de texto no Figma */
+  padding: 0 24px;
+  font-size: clamp(22px, 2.22vw, 32px);
+  line-height: 1.2;
+  font-weight: 300;
+  text-align: center;
+  color: #fff;
 }
 
 /* =========================================================
@@ -1084,7 +1078,14 @@ body.is-locked .site-header.is-hidden {
    ========================================================= */
 
 .services {
+  position: relative; /* referência do offsetTop da lista (initServices) */
   padding: clamp(120px, 15.1vw, 218px) 0 var(--space-128);
+}
+/* Presa enquanto o scroll abre os serviços, um por vez (initServices). O JS
+   define o "top" (abaixo do header, ou mais acima se a seção não couber na
+   tela) e a altura do espaçador (a rolagem dessa etapa). */
+.services.is-pinned .services__stage {
+  position: sticky;
 }
 /* Mesmo estilo do título "Clientes" (18/28, à esquerda, 32px até a lista) */
 .services__title {
