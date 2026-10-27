@@ -40,17 +40,17 @@ As animações seguem o vocabulário das duas referências, estudadas quadro a q
 | Módulo | Comportamento |
 |---|---|
 | Intro | Cerca de 2,7s. Fundo preto, as 5 imagens do Hero surgem espalhadas (como no preloader do Aparelho), o logo MEIUCA sobe letra por letra e o contador vai de 0 a 100%. Depois as letras saem para cima e a cortina sobe. É 100% CSS e termina sozinha mesmo sem JavaScript. |
-| Header | Fixo e sempre visível, com `mix-blend-mode: difference` para ficar legível sobre qualquer fundo. |
+| Header | Fixo, com `mix-blend-mode: difference` para ficar legível sobre qualquer fundo. Some (sobe e apaga) quando o footer chega e volta ao subir; com foco do teclado nele ou com o menu aberto, aparece de novo. |
 | Scroll | Suave na roda do mouse e no trackpad, como o do Prolab (intensidade em `LERP`, no `main.js`). No toque, no teclado e na barra de rolagem o scroll é nativo. |
 | Entrada | Menu e logo entram com blur. A descrição do Hero surge letra por letra. As imagens do marquee sobem de baixo com blur, uma depois da outra. Tudo começa quando a intro sai (`--intro-offset`). |
 | Menu | Estrutura e movimento do menu do meiuca.design: um painel de 672px desce do topo em 0,6s, com o reel em loop à esquerda ("Play reel - 1:32") e os links de 24px à direita. Ao abrir o menu, o reel fixo do canto desce e sai da tela; ao fechar, ele volta. Clicar no reel do menu abre o reel grande a partir dele. Fundo e hover do joaosena.com: vidro com 10% de branco e blur de 50px, e o link escurece para 40% no hover (150ms). O vidro cresce de cima para baixo enquanto o conteúdo desliza, os dois no mesmo quadro. Com o menu aberto, a página atrás fica parada (scroll, elástico do trackpad e marquee) e o header perde o `mix-blend-mode`, que no Chrome quebrava o desfoque do vidro em alguns pontos da página. O botão Menu ganha a pílula de vidro no hover; o Fechar fica sem caixa. |
-| Reel | Como o do mouthwash.studio/studio: fixo no canto inferior direito, pequeno e em loop. Dá para arrastar (volta para o canto com uma mola) e, ao clicar, cresce até o centro da tela sobre um fundo desfocado. Em meiuca.design toca o vídeo completo do Vimeo (ID em `reel.vimeoId`, no `content.js`); nos outros endereços, a prévia em alta. Em Serviços ele sai da frente dos títulos. |
+| Reel | Como o do mouthwash.studio/studio: fixo no canto inferior direito, pequeno e em loop. Dá para arrastar (volta para o canto com uma mola) e, ao clicar, cresce até o centro da tela sobre um fundo desfocado. Em meiuca.design toca o vídeo completo do Vimeo (ID em `reel.vimeoId`, no `content.js`); nos outros endereços, a prévia em alta. Fica fixo durante todo o scroll e some quando o footer chega (volta ao subir). |
 | Hero: imagens | Marquee contínuo da direita para a esquerda, independente do scroll. A velocidade fica em `.marquee__track` (`60s`). |
 | Hero: descrição | Cada palavra acende conforme o scroll, num degradê de 3 palavras, e o texto inteiro termina de acender antes de sair da tela. A opacidade inicial fica em `MIN`, em `main.js`. |
-| 10 Anos | Texto único: "Há 10 anos ajudamos grandes empresas" fica parado (sticky) e só o complemento troca com o scroll (5 frases). As letras do complemento saem para cima com blur e as do próximo entram de baixo. Rolar `45svh` troca uma frase. |
-| Serviços | Mesma mecânica do Prolab, medida no site original. São 4 cards sticky de 100vh, com 65px de intervalo e topo em 0, 50, 100 e 150px. Ao longo da seção, cada card encolhe até 0,4, 0,5, 0,6 e 0,7 e sobe 11vh. O título aparece letra por letra quando o card entra na tela. Os cantos são retos. |
+| 10 Anos | Como o módulo Marques do esrbespoke.au, sem a imagem: "Há mais de 10 anos ajudamos grandes empresas a:" (40px) e, logo abaixo, a frase que completa a ideia (80px, branca), seguida das próximas (40px, apagadas). Com o scroll a lista sobe: a frase de cima apaga subindo e a próxima cresce no lugar dela. A tela fica presa enquanto a lista passa (`28svh` de rolagem por frase). Só `transform` e `opacity` mudam. |
+| Serviços | Como o iverson.inc (título no estilo do "Clientes", à esquerda, como o de Insights): lista em sanfona (Produto, Design System, Branding, Inteligência Artificial). Um item aberto por vez; o aberto (fundo preto 100%) mostra as imagens à direita (principal + 2 detalhes) e a descrição com as tags embaixo à esquerda. A troca anima as duas alturas juntas, sem mexer no resto da página. Descrições e detalhes provisórios em `services`, no `content.js`. |
 | Insights (Blog) | O título surge letra por letra e os cards sobem com mola. No hover, uma pílula "Ler artigo" segue o cursor (como o "Explore" do Prolab), o fundo dá zoom e a miniatura sobe. O primeiro card usa fundo com desfoque de 80px, como no Figma (`bg: 'soft'` em `content.js`). |
-| Clientes | Lista de clientes em cinza. No hover, o nome acende e, se o cliente tiver imagem, a prévia do projeto (240×180) aparece ao lado do cursor com uma revelação de cima para baixo. Para incluir prévias dos outros clientes, adicione `image` em `clients`, no `content.js`. |
+| Clientes | Como o work.co/clients: grade de 3 colunas com o título na primeira célula. Cada cliente tem nome, descrição e link "Ver projeto", que fica alinhado na base da linha. Os itens sobem ao entrar na tela, coluna por coluna. Descrições provisórias: troque em `clients`, no `content.js`. |
 | Footer | Os blocos sobem ao entrar na tela e as letras do logo MEIUCA sobem em sequência. |
 
 As revelações se repetem toda vez que o elemento entra na tela, descendo ou subindo, e a entrada do Hero também se repete quando ele volta à tela.
@@ -66,7 +66,7 @@ Todas as imagens vêm do Figma:
 - **Hero e Blog:** renderizadas em 3x.
 - **Serviços:** originais em até 4080px, ou renderizadas na resolução nativa quando o Figma aplica filtros, como em Inteligência Artificial.
 
-O build gera versões AVIF, WebP e JPG em vários tamanhos com `srcset` (qualidade 85), e o navegador baixa só o que cada tela precisa. As imagens de Serviços vão até 4080px para cobrir telas Retina e Pro Display em largura total.
+O build gera versões AVIF, WebP e JPG em vários tamanhos com `srcset` (qualidade 85), e o navegador baixa só o que cada tela precisa. As imagens de Serviços vão até 2080px (a coluna de imagens tem ~36% da tela), o suficiente para telas Retina e Pro Display.
 
 **Branding:** o Figma ainda não tem uma imagem para Branding. Hoje ela usa a flor do Hero (`servico-branding.png`) como imagem provisória.
 
@@ -80,7 +80,8 @@ O build gera versões AVIF, WebP e JPG em vários tamanhos com `srcset` (qualida
 ## Pendências
 
 - [ ] Imagem definitiva para Branding (`src/assets/images/servico-branding.png`).
-- [ ] Prévias dos clientes além de Mude (`clients`, em `src/data/content.js`).
+- [ ] Serviços: descrições, tags e 2 imagens de detalhe por serviço (`services`, em `src/data/content.js`). Hoje os detalhes são recortes da imagem principal.
+- [ ] Descrições e links dos clientes (`clients`, em `src/data/content.js`). Hoje o texto é provisório e o link é `#`.
 - [ ] Conectar a newsletter a um serviço. Hoje só valida o e-mail e mostra uma mensagem de sucesso, sem enviar nada (ver `TODO` em `main.js`). Depois, liberar o domínio do serviço em `connect-src` / `form-action` na CSP.
 - [ ] URLs do LinkedIn e Instagram (`src/data/content.js`).
 - [ ] Links do menu e dos posts do blog (hoje `#`).
