@@ -4,11 +4,16 @@ import SplitChars from './SplitChars.astro';
 
 // 10 Anos do Figma (nó 809:493): container azul (#001EFF, 1360×671 no
 // desktop) com o texto de 32px no centro e um tracejado de fundo (2 linhas
-// verticais e 3 círculos de 774px). Quando o container entra na tela, o
-// tracejado se desenha linha por linha: cada traço é revelado por uma máscara
-// (o desenho anima a máscara, o tracejado em si não muda).
-// Medidas em coordenadas do Figma; o grupo foi centralizado no container
-// (no Figma estava 16px à esquerda do centro).
+// verticais e 3 círculos de 774px), centralizado no container (no Figma
+// estava 16px à esquerda).
+//
+// O desenho "linha por linha" só usa transform (roda no compositor, sem
+// repintar nada): o tracejado fica parado e "tampas" da cor do fundo saem
+// da frente dele. Nas linhas, uma faixa azul desce. Em cada círculo, duas
+// meias-argolas azuis giram dentro de duas metades recortadas (direita e
+// esquerda): ao girar, descobrem o traço no sentido horário a partir das
+// 12h e somem atrás do recorte. Medido no Chromium: 4 a 5 vezes mais quadros
+// do que com a máscara SVG animada que havia antes.
 const W = 1360;
 const H = 671;
 const cx = W / 2;
@@ -16,32 +21,44 @@ const cy = H / 2;
 const r = 387;
 const gapY = 468.15; // distância entre os centros dos círculos
 const lines = [cx - 530, cx + 530];
-const circles = [cy, cy - gapY, cy + gapY]; // ordem do desenho: meio, cima, baixo
-// O de baixo só aparece em cima (um arco de ~140°): ele começa na ponta
-// esquerda desse arco e desenha só o arco, de uma vez (sem a parte de fora).
+// Ordem de empilhamento: o círculo do meio (desenhado primeiro) fica por cima,
+// para a tampa dos outros não esconder o traço dele onde eles se cruzam.
+const circles = [
+  { key: 'top', y: cy - gapY },
+  { key: 'bot', y: cy + gapY },
+  { key: 'mid', y: cy },
+];
+---
 ---
 
 <section class="ten" aria-labelledby="ten-title">
-  <div class="ten__box" data-draw>
-    <svg class="ten__bg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
-      <defs>
-        <mask id="ten-draw" maskUnits="userSpaceOnUse" x="0" y="0" width={W} height={H}>
-          {lines.map((x, i) => (
-            <line class={`ten__draw td${i}`} x1={x} y1="0" x2={x} y2={H} pathLength="1" />
-          ))}
-          {circles.map((y, i) => (
-            <circle class={`ten__draw td${i + 2}`} cx={cx} cy={y} r={r} pathLength="1" transform={`rotate(${i === 2 ? -160 : -90} ${cx} ${y})`} />
-          ))}
-        </mask>
-      </defs>
-      <g class="ten__dash" mask="url(#ten-draw)">
-        {lines.map((x) => <line x1={x} y1="0" x2={x} y2={H} />)}
-        {circles.map((y) => <circle cx={cx} cy={y} r={r} />)}
-      </g>
-    </svg>
+  <div class="ten__box" data-draw data-header-solid>
+    <div class="ten__art" aria-hidden="true">
+      <svg class="ten__layer" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" focusable="false">
+        <g class="ten__dash">{lines.map((x) => <line x1={x} y1="0" x2={x} y2={H} />)}</g>
+      </svg>
+      {lines.map((_, i) => <span class={`ten__line-cover tl${i}`} />)}
+      {
+        circles.map((c) => (
+          <>
+            <svg class="ten__layer" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" focusable="false">
+              <circle class="ten__dash" cx={cx} cy={c.y} r={r} />
+            </svg>
+            <span class={`ten__half ten__half--r tc-${c.key}`}>
+              <svg class="ten__cover" viewBox="0 0 784 784" focusable="false"><path d="M392 5A387 387 0 0 1 392 779" /></svg>
+            </span>
+            <span class={`ten__half ten__half--l tc-${c.key}`}>
+              <svg class="ten__cover" viewBox="0 0 784 784" focusable="false"><path d="M392 779A387 387 0 0 1 392 5" /></svg>
+            </span>
+          </>
+        ))
+      }
+    </div>
     <h2 class="ten__text reveal-chars" id="ten-title" data-reveal>
       <SplitChars text={tenYears.lines[0]} /><br class="ten__br" />
       <SplitChars text={tenYears.lines[1]} />
     </h2>
+    <!-- Mesmo estilo do "Ver mais" de Insights; no meio do espaço abaixo do texto -->
+    <a class="ten__cta pill-button reveal reveal-d2" href={tenYears.cta.href}>{tenYears.cta.label}</a>
   </div>
 </section>
