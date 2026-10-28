@@ -9,7 +9,7 @@ import SplitChars from './SplitChars.astro';
     <h2 class="blog__title reveal-chars" id="blog-title" data-reveal><SplitChars text="Insights" /></h2>
   </header>
 
-  <ul class="blog__list" role="list">
+  <ul class="blog__list" role="list" data-header-blend>
     {
       posts.map((post, i) => (
         <li class={`blog__item reveal reveal-d${i}`}>
