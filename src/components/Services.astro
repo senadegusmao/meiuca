@@ -15,7 +15,7 @@ const pic = { formats: ['avif', 'webp'], fallbackFormat: 'jpg', quality: 85, loa
   <!-- A lista fica presa enquanto o scroll abre um serviço por vez (initServices) -->
   <div class="services__stage" data-svc-stage>
 
-  <ol class="svc reveal" role="list" data-svc>
+  <ol class="svc reveal" role="list" data-svc data-header-blend>
     {
       services.map((s, i) => (
         <li class={`svc__item${i === 0 ? ' is-open is-expanded' : ''}`} data-svc-item>
