@@ -41,6 +41,8 @@ export const heroImages = [
 export const tenYears = {
   // duas linhas, como no Figma (no celular o texto quebra sozinho)
   lines: ['Há 10 anos ajudando grandes empresas a reimaginar', 'a experiência de um produto'],
+  // link provisório até a página Sobre existir
+  cta: { label: 'Sobre nós', href: '#' },
 };
 
 // Serviços (layout do iverson.inc): lista em sanfona. Cada serviço tem uma imagem

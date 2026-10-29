@@ -210,12 +210,23 @@ function initReel() {
     video.querySelectorAll('source[data-src]').forEach((s) => (s.src = s.dataset.src));
     video.preload = 'auto';
     video.load();
-    play();
+    if (!tucked && !away) play();
   };
   const later = () => setTimeout(loadMini, 1200);
   if (document.readyState === 'complete') later();
   else window.addEventListener('load', later, { once: true });
-  document.addEventListener('visibilitychange', () => (document.hidden ? video.pause() : !upgrade && play()));
+  // Escondido (footer, menu aberto) ou com a aba em segundo plano, o vídeo
+  // pausa: cada quadro de vídeo obriga o navegador a montar a tela de novo.
+  let tucked = false;
+  let away = false;
+  let pauseTimer = 0;
+  const sync = () => {
+    clearTimeout(pauseTimer);
+    if (full) return;
+    if (tucked || away) pauseTimer = setTimeout(() => video.pause(), 700); // depois de sair da tela
+    else if (video.dataset.loaded && !upgrade) play();
+  };
+  document.addEventListener('visibilitychange', () => (document.hidden ? video.pause() : sync()));
 
   // Arrastar: segue o dedo/mouse e volta para o canto com uma mola (e o "arremesso")
   let dx = 0;
@@ -420,7 +431,11 @@ function initReel() {
   };
 
   reelApi = {
-    setAway: (on) => el.classList.toggle('is-away', on),
+    setAway: (on) => {
+      el.classList.toggle('is-away', on);
+      away = on;
+      sync();
+    },
     openFrom: (from, src) => open(from, src),
   };
 
@@ -431,9 +446,14 @@ function initReel() {
   // (mesmo ponto do header: topo do footer a 65% da tela)
   const footer = document.querySelector('.footer');
   if (footer && 'IntersectionObserver' in window) {
-    new IntersectionObserver(([e]) => el.classList.toggle('is-tucked', e.isIntersecting), {
-      rootMargin: '0px 0px -35% 0px',
-    }).observe(footer);
+    new IntersectionObserver(
+      ([e]) => {
+        el.classList.toggle('is-tucked', e.isIntersecting);
+        tucked = e.isIntersecting;
+        sync();
+      },
+      { rootMargin: '0px 0px -35% 0px' },
+    ).observe(footer);
   }
   // Esc fecha o reel antes do menu
   window.addEventListener(
@@ -459,6 +479,85 @@ function initHeaderHide() {
   new IntersectionObserver(([e]) => header.classList.toggle('is-hidden', e.isIntersecting), {
     rootMargin: '0px 0px -35% 0px',
   }).observe(footer);
+}
+
+/* ---------------------------------------------------------
+   Blend do header só quando ele está sobre imagens. O "difference" obriga
+   o navegador a montar a tela inteira numa camada extra a cada quadro;
+   sobre o fundo preto ele dá o mesmo branco, então fica desligado.
+   - Imagens ([data-header-blend]: marquee, Serviços, Insights): blend
+     ligado enquanto elas passam pela faixa do header. A faixa tem a altura
+     do header; o que entra por baixo ainda anda ~40px (30px no celular)
+     até o logo e o "Menu", tempo de sobra para o blend ligar. Em Serviços
+     a lista fica presa logo abaixo do header, então o blend fica desligado
+     enquanto o scroll abre os itens.
+   - Azul do 10 Anos ([data-header-solid]): com o header inteiro sobre o
+     azul, ele só muda de cor (a mesma do blend); o blend liga só enquanto
+     a borda do azul passa por ele.
+   --------------------------------------------------------- */
+function initHeaderBlend() {
+  const header = document.querySelector('[data-header]');
+  if (!header) return;
+  const targets = document.querySelectorAll('[data-header-blend]');
+  const box = document.querySelector('[data-header-solid]');
+  let imgs = false;
+  let edge = false;
+  let solid = false;
+  const apply = () => {
+    root.classList.toggle('header-blend', imgs || edge);
+    root.classList.toggle('header-on-blue', solid && !imgs);
+  };
+
+  if (targets.length && 'IntersectionObserver' in window) {
+    const under = new Set();
+    let io = null;
+    const watch = () => {
+      io?.disconnect();
+      under.clear();
+      const band = Math.max(1, header.offsetHeight - 2);
+      io = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((e) => (e.isIntersecting ? under.add(e.target) : under.delete(e.target)));
+          imgs = under.size > 0;
+          apply();
+        },
+        { rootMargin: `0px 0px ${band - window.innerHeight}px 0px` },
+      );
+      targets.forEach((t) => io.observe(t));
+    };
+    watch();
+    let timer;
+    window.addEventListener('resize', () => {
+      clearTimeout(timer);
+      timer = setTimeout(watch, 150);
+    });
+  } else if (targets.length) {
+    imgs = true;
+    apply();
+  }
+
+  if (box) {
+    let top = 0;
+    let bottom = 0;
+    let band = 0;
+    measurers.push(() => {
+      const r = box.getBoundingClientRect();
+      top = r.top + window.scrollY;
+      bottom = r.bottom + window.scrollY;
+      band = header.offsetHeight;
+    });
+    updaters.push((y) => {
+      const t = top - y;
+      const b = bottom - y;
+      const s = t <= 0 && b >= band; // header inteiro sobre o azul
+      const e = !s && t < band && b > 0; // a borda do azul passando pelo header
+      if (s !== solid || e !== edge) {
+        solid = s;
+        edge = e;
+        apply();
+      }
+    });
+  }
 }
 
 /* ---------------------------------------------------------
@@ -523,6 +622,8 @@ function initServices() {
     items.forEach((it, i) => it.classList.toggle('is-expanded', was[i]));
     list.style.setProperty('--svc-open', `${max}px`);
   });
+  let listH = 0;
+  measurers.push(() => (listH = list.offsetHeight));
   const ease = (t) => 1 - Math.pow(1 - t, 5); // ≈ cubic-bezier(0.22, 1, 0.36, 1)
   const DURATION = 700;
   let finish = null;
@@ -560,7 +661,13 @@ function initServices() {
       if (closing) closing.style.height = '';
       if (opening) opening.style.height = opening.style.minHeight = '';
       root.classList.remove('svc-anim');
-      measure(); // as seções abaixo podem ter mudado de lugar
+      // Remede a página só se a altura da lista mudou (com todos os abertos
+      // da mesma altura, ela não muda: evita um layout forçado a cada troca)
+      const h = list.offsetHeight;
+      if (h !== listH) {
+        listH = h;
+        measure();
+      }
     };
     render(0);
     let t0 = 0;
@@ -930,6 +1037,7 @@ const requestUpdate = () => {
 
 initMenu();
 initHeaderHide();
+initHeaderBlend();
 initReel();
 initScrollWords();
 initServices();
