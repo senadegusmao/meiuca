@@ -1,18 +1,20 @@
 ---
-import { Picture } from 'astro:assets';
+import { Picture, getImage } from 'astro:assets';
 import { heroText, heroImages } from '../data/content.js';
 import { splitText } from '../lib/split.js';
+import { withBase } from '../lib/url.js';
 
 const words = splitText(heroText);
 // A entrada letra por letra dura ~1,2s qualquer que seja o tamanho do texto.
 const total = words.reduce((n, w) => n + w.chars.length, 0);
 const step = Math.min(0.85, 100 / total);
 
-// Medidas do Figma (px). As imagens são geradas em vários tamanhos até 3x.
-const sizes = { a: [300, 400], b: [250, 333], c: [280, 373] };
-
-// Cada grupo repete as 5 imagens 2x para cobrir telas largas (até ~2900px).
-const group = [...heroImages, ...heroImages];
+// Imagens do Figma (medidas em px em heroImages; classes .mq1….mq9 no CSS).
+// As 9 juntas já passam de 3500px, então cada grupo do marquee tem uma cópia
+// só de cada imagem. Capa do vídeo (o item animado) em 2x.
+const posters = await Promise.all(
+  heroImages.map((img) => (img.video ? getImage({ src: img.src, width: img.w * 2, format: 'webp', quality: 90 }) : null)),
+);
 ---
 
 <section class="hero" aria-label="Apresentação">
@@ -35,26 +37,46 @@ const group = [...heroImages, ...heroImages];
       {
         [0, 1].map((copy) => (
           <ul class="marquee__group" aria-hidden={copy === 1 || undefined} role={copy === 0 ? 'list' : undefined}>
-            {group.map((img, i) => {
-              const [w, h] = sizes[img.size];
-              const decorative = copy === 1 || i >= heroImages.length;
+            {heroImages.map((img, i) => {
+              const { w, h } = img;
+              const decorative = copy === 1;
               return (
-                <li class={`marquee__item marquee__item--${img.size}`}>
+                <li class={`marquee__item mq${i + 1}`}>
                   <div class={`marquee__media enter-rise d${Math.min(6 + i * 2, 40)}`}>
-                    <Picture
-                      src={img.src}
-                      alt={decorative ? '' : img.alt}
-                      formats={['avif', 'webp']}
-                      fallbackFormat="jpg"
-                      quality={85}
-                      widths={[Math.round(w * 0.6), Math.round(w * 1.2), w, Math.round(w * 1.8), w * 2, w * 3]}
-                      sizes={`(max-width: 760px) ${Math.round(w * 0.6)}px, ${w}px`}
-                      width={w}
-                      height={h}
-                      loading={copy === 0 && i < 5 ? 'eager' : 'lazy'}
-                      fetchpriority={copy === 0 && i < 3 ? 'high' : undefined}
-                      decoding="async"
-                    />
+                    {img.video ? (
+                      <video
+                        class="marquee__video"
+                        muted
+                        loop
+                        playsinline
+                        preload="none"
+                        width={w}
+                        height={h}
+                        poster={posters[i].src}
+                        aria-label={decorative ? undefined : img.alt}
+                        aria-hidden={decorative || undefined}
+                        tabindex="-1"
+                        data-marquee-video
+                      >
+                        <source src={withBase(img.video.webm)} type="video/webm" />
+                        <source src={withBase(img.video.mp4)} type="video/mp4" />
+                      </video>
+                    ) : (
+                      <Picture
+                        src={img.src}
+                        alt={decorative ? '' : img.alt}
+                        formats={['avif', 'webp']}
+                        fallbackFormat="jpg"
+                        quality={88}
+                        widths={[Math.round(w * 0.6), Math.round(w * 1.2), w, Math.round(w * 1.8), w * 2, w * 3]}
+                        sizes={`(max-width: 760px) ${Math.round(w * 0.6)}px, ${w}px`}
+                        width={w}
+                        height={h}
+                        loading={copy === 0 && i < 5 ? 'eager' : 'lazy'}
+                        fetchpriority={copy === 0 && i < 3 ? 'high' : undefined}
+                        decoding="async"
+                      />
+                    )}
                   </div>
                 </li>
               );

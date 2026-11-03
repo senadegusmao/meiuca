@@ -891,7 +891,32 @@ function initWarmup() {
 function initMarquee() {
   const marquee = document.querySelector('[data-marquee]');
   if (!marquee || !('IntersectionObserver' in window)) return;
-  new IntersectionObserver(([e]) => marquee.classList.toggle('is-paused', !e.isIntersecting)).observe(marquee);
+  const videos = [...marquee.querySelectorAll('[data-marquee-video]')];
+  const animate = videos.length && !reducedMotion.matches;
+  let shown = false;
+  const near = new Set();
+  // Item animado (vídeo): carrega e toca quando o marquee está na tela e ele
+  // está a menos de uma largura do marquee de entrar (as imagens andam para a
+  // esquerda); pausa quando sai ou a aba some. Com movimento reduzido, fica a
+  // capa parada.
+  const sync = (v) => (shown && near.has(v) && !document.hidden ? v.play().catch(() => {}) : v.pause());
+  new IntersectionObserver(([e]) => {
+    shown = e.isIntersecting;
+    marquee.classList.toggle('is-paused', !shown);
+    if (animate) videos.forEach(sync);
+  }).observe(marquee);
+  if (!animate) return;
+  const io = new IntersectionObserver(
+    (entries) =>
+      entries.forEach((e) => {
+        if (e.isIntersecting) near.add(e.target);
+        else near.delete(e.target);
+        sync(e.target);
+      }),
+    { root: marquee, rootMargin: '0px 100% 0px 0px' },
+  );
+  videos.forEach((v) => io.observe(v));
+  document.addEventListener('visibilitychange', () => videos.forEach(sync));
 }
 
 /* ---------------------------------------------------------

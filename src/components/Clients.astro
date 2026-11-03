@@ -1,11 +1,12 @@
 ---
-import { clients } from '../data/content.js';
+import { clients, showCaseLinks } from '../data/content.js';
 import { withBase } from '../lib/url.js';
 import SplitChars from './SplitChars.astro';
 
 // Layout do work.co/clients: grade de 3 colunas, o título do módulo ocupa a
 // primeira célula e cada cliente tem nome, descrição e link. Os links ficam
-// alinhados na base de cada linha. Conteúdo em `clients`, no content.js.
+// alinhados na base de cada linha (ocultos por enquanto: `showCaseLinks`).
+// Conteúdo em `clients`, no content.js.
 ---
 
 <section class="clients" aria-labelledby="clients-title">
@@ -15,7 +16,7 @@ import SplitChars from './SplitChars.astro';
       <article class={`client reveal reveal-d${(i + 1) % 3}`}>
         <h3 class="client__name">{c.name}</h3>
         <p class="client__desc">{c.description}</p>
-        {c.link && (
+        {showCaseLinks && c.link && (
           <a class="client__link" href={withBase(c.link.href)} aria-label={`${c.link.label}: ${c.name}`}>
             <span>{c.link.label}</span>
           </a>

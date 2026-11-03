@@ -1,20 +1,26 @@
 // Conteúdo da home. Edite aqui sem mexer no layout.
-import hero1 from '../assets/images/hero-1.png';
-import hero2 from '../assets/images/hero-2.png';
-import hero3 from '../assets/images/hero-3.png';
-import hero4 from '../assets/images/hero-4.png';
-import hero5 from '../assets/images/hero-5.png';
-import servProduto from '../assets/images/servico-produto.png';
+// Imagens do Figma (seção "conteudo", nó 1030:18), exportadas em 4x (PNG).
+// O build gera AVIF/WebP/JPG em vários tamanhos; o navegador baixa só o que
+// cada tela precisa (até 3x nos celulares e ~2x em monitores 5K/6K).
+import hero01 from '../assets/images/hero-01.png';
+import hero02 from '../assets/images/hero-02.png';
+import hero03 from '../assets/images/hero-03.png';
+import hero04 from '../assets/images/hero-04.png';
+import hero05 from '../assets/images/hero-05.png';
+import hero06 from '../assets/images/hero-06.png';
+import hero07 from '../assets/images/hero-07.png';
+import hero08 from '../assets/images/hero-08.png';
+import hero09 from '../assets/images/hero-09.png';
+import servBrand from '../assets/images/servico-brand.png';
+import servBrandD1 from '../assets/images/servico-brand-detalhe-1.png';
+import servBrandD2 from '../assets/images/servico-brand-detalhe-2.png';
 import servDS from '../assets/images/servico-design-system.png';
-import servBranding from '../assets/images/servico-branding.png';
-import servIA from '../assets/images/servico-ia.png';
-// Detalhes de Serviços: recortes em alta das imagens principais (provisórios)
-import servProdutoD1 from '../assets/images/servico-produto-detalhe-1.png';
-import servProdutoD2 from '../assets/images/servico-produto-detalhe-2.png';
 import servDSD1 from '../assets/images/servico-design-system-detalhe-1.png';
 import servDSD2 from '../assets/images/servico-design-system-detalhe-2.png';
-import servBrandingD1 from '../assets/images/servico-branding-detalhe-1.png';
-import servBrandingD2 from '../assets/images/servico-branding-detalhe-2.png';
+import servPD from '../assets/images/servico-product-design.png';
+import servPDD1 from '../assets/images/servico-product-design-detalhe-1.png';
+import servPDD2 from '../assets/images/servico-product-design-detalhe-2.png';
+import servIA from '../assets/images/servico-ia.png';
 import servIAD1 from '../assets/images/servico-ia-detalhe-1.png';
 import servIAD2 from '../assets/images/servico-ia-detalhe-2.png';
 import blog1 from '../assets/images/blog-1.png';
@@ -25,70 +31,94 @@ import avatar2 from '../assets/images/avatar-2.png';
 import avatar3 from '../assets/images/avatar-3.png';
 
 export const heroText =
-  'Somos um estúdio de design e estratégia orgulhosamente brasileiro, um parceiro ideal para organizações que entendem a importância de acelerar sem abrir mão da autenticidade.';
+  'Somos um estúdio de design brasileiro para quem acredita que a inteligência artificial escala talento, mas não o substitui.';
 
-// size: a = 300×400, b = 250×333, c = 280×373 (medidas do Figma em px)
+// Marquee do Hero, na ordem do Figma. w/h = tamanho no Figma (px); as
+// classes .mq1….mq9 do global.css repetem essas medidas (o HTML não pode ter
+// style= por causa da CSP). O 06 é animado no Figma (GIF): no site vira um
+// vídeo leve em loop (media/hero-06.*), com a imagem como capa.
 export const heroImages = [
-  { src: hero1, size: 'a', alt: 'Embalagem preta com a marca Fursys' },
-  { src: hero2, size: 'b', alt: 'Flor com o texto “a living brand OS.”' },
-  { src: hero3, size: 'c', alt: 'Ilustração de uma cabeça com vasos sanguíneos e o selo Cardiovascular Health' },
-  { src: hero4, size: 'a', alt: 'Interface de agendamento “OEM Sound Bath” sobre um rosto' },
-  { src: hero5, size: 'b', alt: 'Relógio inteligente exibindo saldo de investimentos' },
+  { src: hero01, w: 250, h: 333, alt: 'Botton amarelo de carinha sorridente preso num tecido jeans' },
+  { src: hero02, w: 582, h: 403, alt: 'Portal interno do Itaú com a foto de uma mulher sorrindo e a mensagem “Um ótimo dia de trabalho pra você :)”' },
+  { src: hero03, w: 280, h: 373, alt: 'Barra de navegação flutuante azul de um app, com o botão Extrato' },
+  { src: hero04, w: 437, h: 444, alt: 'Card verde de um app de saúde mostrando a glicose (122 mg/dL) sobre nuvens alaranjadas' },
+  { src: hero05, w: 553, h: 347, alt: 'Ensaio fotográfico feito com IA: três retratos em tons de laranja' },
+  {
+    src: hero06,
+    w: 437,
+    h: 400,
+    alt: 'Ilustrações animadas em traço preto sobre fundo laranja',
+    video: { webm: '/media/hero-06.webm', mp4: '/media/hero-06.mp4' },
+  },
+  { src: hero07, w: 250, h: 250, alt: 'Selo Great Place To Work sobre fundo azul' },
+  { src: hero08, w: 280, h: 373, alt: 'App da Mude sobre fundo amarelo, com a tela “Morning Rituals to Alleviate Anxiety”' },
+  { src: hero09, w: 300, h: 400, alt: 'Sala com paredes de madeira, uma mesa baixa com revistas e uma pessoa passando' },
 ];
+// Intro: 5 das imagens, espalhadas pela tela
+export const introImages = [0, 3, 5, 7, 8].map((i) => heroImages[i]);
 
 // 10 Anos (Figma, "Home (alterações Rafa 15.10)", nó 809:493): texto dentro
 // do container azul, com o tracejado de fundo se desenhando
 export const tenYears = {
-  // duas linhas, como no Figma (no celular o texto quebra sozinho)
-  lines: ['Há 10 anos ajudando grandes empresas a reimaginar', 'a experiência de um produto'],
+  // texto da seção "conteudo" do Figma, em duas linhas (no celular quebra sozinho)
+  lines: ['Há 10 anos ajudamos empresas a reimaginar', 'suas experiências digitais.'],
   // link provisório até a página Sobre existir
   cta: { label: 'Sobre nós', href: '#' },
 };
 
-// Serviços (layout do iverson.inc): lista em sanfona. Cada serviço tem uma imagem
-// principal (16:9), dois detalhes, uma descrição e as tags.
-// - Descrições: texto provisório. Tags: sugestões tiradas do próprio site; revise.
-// - Detalhes: por enquanto são recortes da imagem principal. Troque por imagens
-//   próprias do projeto quando houver (2 por serviço, 16:9).
-const svcText = (area) =>
-  `Texto provisório. Aqui entra uma frase sobre como a Meiuca trabalha com ${area}: o problema que resolve e o que muda para o cliente.`;
-
+// Serviços (layout do iverson.inc): lista em sanfona. Nomes, textos e
+// imagens da seção "conteudo" do Figma: uma imagem principal (876×486) e
+// dois detalhes (426×277). As tags ainda são sugestões (não estão no Figma).
 export const services = [
   {
-    name: 'Produto',
-    image: servProduto,
-    alt: 'Telas de um app de companhia aérea: novidades, login, busca de voos e check-in',
-    details: [servProdutoD1, servProdutoD2],
-    description: svcText('produto'),
-    tags: ['Pesquisa', 'Estratégia', 'UX', 'UI', 'Prototipação', 'Desenvolvimento'],
+    name: 'Brand',
+    image: servBrand,
+    alt: 'Marca Raio em vermelho sobre uma foto desfocada',
+    details: [
+      { src: servBrandD1, alt: 'Ilustrações coloridas de pessoas, comida e plantas' },
+      { src: servBrandD2, alt: 'Ilustração de uma pimenta laranja pendurada sobre fundo vermelho' },
+    ],
+    description:
+      'Podemos ajudar tanto com o desafio de levar mais marca para as suas interfaces quanto a evoluir assets como Ilustrações, ensaios fotográficos feito com IA, vídeos promocionais e sistematização de layouts.',
+    tags: ['Estratégia', 'Identidade visual', 'Tom de voz', 'Sistema de marca', 'Governança'],
   },
   {
     name: 'Design System',
     image: servDS,
-    alt: 'Tela de bagagem de um app de viagem, construída com os componentes do design system',
-    details: [servDSD1, servDSD2],
-    description: svcText('design systems'),
+    alt: 'Telas de um app de companhia aérea construídas com o design system: novidades, login, busca de voos e check-in',
+    details: [
+      { src: servDSD1, alt: 'App do jornal O Globo' },
+      { src: servDSD2, alt: 'As siglas DS e AI ligadas por uma esfera de linhas' },
+    ],
+    description:
+      'Somos referência nacional no assunto. Não só estabelecemos os padrões de interação para o seu ecossistema quanto o conectamos com inteligência artificial para evoluir seus produtos de um jeito mais inteligente.',
     tags: ['Fundamentos', 'Tokens', 'Componentes', 'Documentação', 'Governança', 'IA'],
   },
   {
-    // Imagem provisória: o Figma ainda não tem uma imagem para Branding
-    name: 'Branding',
-    image: servBranding,
-    alt: 'Flor com o texto “a living brand OS.”',
-    details: [servBrandingD1, servBrandingD2],
-    description: svcText('marca'),
-    tags: ['Estratégia', 'Identidade visual', 'Tom de voz', 'Sistema de marca', 'Governança'],
+    name: 'Product Design',
+    image: servPD,
+    alt: 'Telas do app da Matrix Care, de cuidado para idosos',
+    details: [
+      { src: servPDD1, alt: 'App da Mude sobre fundo amarelo' },
+      { src: servPDD2, alt: 'Telas de um internet banking B2B' },
+    ],
+    description:
+      'Projetamos aplicativos, sistemas web, e-commerces, portais e sites institucionais. Nossa busca é sempre por interfaces que entregam expressão de marca e, obviamente, convertam.',
+    tags: ['Pesquisa', 'Estratégia', 'UX', 'UI', 'Prototipação', 'Desenvolvimento'],
   },
   {
-    name: 'Inteligência Artificial',
+    name: 'Inteligência artificial',
     image: servIA,
-    alt: 'Anéis de luz abstratos sobre fundo preto',
-    details: [servIAD1, servIAD2],
-    description: svcText('inteligência artificial'),
+    alt: 'Forma 3D de vidro listrado sobre fundo preto',
+    details: [
+      { src: servIAD1, alt: 'Ensaio fotográfico feito com IA: três retratos em tons de laranja' },
+      { src: servIAD2, alt: 'Agente de IA respondendo “Só um minutinho! Pensando…”' },
+    ],
+    description:
+      'Não só usamos IA para evoluir nossa entrega, mas também projetamos experiências onde ela é protagonista. Também criamos identidade e toda a expressão de agentes proprietários que chegam ao usuário final.',
     tags: ['Agent Experience', 'Interfaces conversacionais', 'Processos com IA', 'Assets de marca com IA'],
   },
 ];
-
 
 export const posts = [
   {
@@ -125,18 +155,15 @@ export const posts = [
   },
 ];
 
-// Menu aberto (mesmos itens do meiuca.design). Troque os "#" pelas páginas quando existirem.
-export const menu = [
-  { label: 'Início', href: '/' },
-  { label: 'Sobre', href: '#' },
-  { label: 'Design System', href: '#' },
-  { label: 'Aplicativos', href: '#' },
-  { label: 'Sistemas Web', href: '#' },
-  { label: 'Agent Experience', href: '#' },
-  { label: 'Ventures', href: '#' },
-  { label: 'Novidades', href: '#blog' },
+// Links do menu aberto e do footer (os mesmos nos dois, pedido do João).
+// Troque o "#" do About pela página quando ela existir.
+export const nav = [
+  { label: 'Home', href: '/' },
+  { label: 'About', href: '#' },
+  { label: 'Blog', href: '#blog' },
   { label: 'Contato', href: '#contato' },
 ];
+export const menu = nav;
 
 // Reel: prévia em loop no canto da tela e vídeo completo no Vimeo (o mesmo do meiuca.design).
 // O Vimeo só deixa tocar em meiuca.design; nos outros endereços aparece a prévia em alta.
@@ -145,16 +172,6 @@ export const reel = {
   duration: '1:32',
   vimeoId: '1059077959',
 };
-
-export const nav = [
-  { label: 'Home', href: '/' },
-  { label: 'About', href: '#' },
-  { label: 'Works', href: '#' },
-  { label: 'Capabilities', href: '#servicos' },
-  { label: 'Ventures', href: '#' },
-  { label: 'Blog', href: '#blog' },
-  { label: 'Shop', href: '#' },
-];
 
 export const contact = {
   email: 'oi@meiuca.design',
@@ -167,19 +184,52 @@ export const contact = {
 };
 
 // Clientes (layout do work.co/clients): nome, descrição e link de cada um.
-// As descrições são provisórias; troque `description` e o `href` do link
-// quando houver o texto e a página de cada projeto. Sem `link`, o link some.
-const placeholder =
-  'Texto provisório. Aqui entra um resumo do projeto: o desafio, o que fizemos juntos e o resultado.';
+// Textos da seção "conteudo" do Figma ("cases text").
+// Os links "Ver projeto" estão ocultos até existirem as páginas dos projetos
+// (pedido do João): para mostrar, troque `showCaseLinks` para `true` e o
+// `href` de cada um. Sem `link`, o link de um cliente some.
+export const showCaseLinks = false;
 const caseLink = { label: 'Ver projeto', href: '#' };
 
 export const clients = [
-  { name: 'Estapar', description: placeholder, link: caseLink },
-  { name: 'Mude', description: placeholder, link: caseLink },
-  { name: 'Caju', description: placeholder, link: caseLink },
-  { name: 'Unimed', description: placeholder, link: caseLink },
-  { name: 'Rands', description: placeholder, link: caseLink },
-  { name: 'Printi', description: placeholder, link: caseLink },
-  { name: 'Iti', description: placeholder, link: caseLink },
-  { name: 'Rede', description: placeholder, link: caseLink },
+  {
+    name: 'Gol + Smiles',
+    description: 'Projetamos, desenvolvemos e implementamos o Tangerina Design System para Gol e Smiles.',
+    link: caseLink,
+  },
+  {
+    name: 'Editora Globo',
+    description: 'Projetamos o Design System web e app para suportar as mais de 20 marcas da Editora Globo.',
+    link: caseLink,
+  },
+  {
+    name: 'Itaú',
+    description: 'Apoiamos na evolução do seu Design System e na construção do portal interno do Itaú.',
+    link: caseLink,
+  },
+  {
+    name: 'Mude',
+    description: 'Projetamos e desenvolvemos o app da Mude, startup européia de mudança de lifestyle.',
+    link: caseLink,
+  },
+  {
+    name: 'Caju',
+    description: 'Projetamos e desenvolvemos o Design System da Caju, além de evoluir visualmente seus produtos.',
+    link: caseLink,
+  },
+  {
+    name: 'Jeitto',
+    description: 'Criamos seu Design System, um ensaio fotográfico com IA, evoluímos suas ilustrações e seu app.',
+    link: caseLink,
+  },
+  {
+    name: 'Matrix Care',
+    description: 'Projetamos o app e o Design System da Matrix Care, startup americana de cuidado para idosos.',
+    link: caseLink,
+  },
+  {
+    name: 'Sicredi',
+    description: 'Projetamos e desenvolvemos o Design System e o internet banking B2B (web + app) da Sicredi.',
+    link: caseLink,
+  },
 ];

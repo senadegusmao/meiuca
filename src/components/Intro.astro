@@ -3,7 +3,7 @@
 // termina sozinha mesmo se o JavaScript falhar. Quem prefere menos
 // movimento não vê a intro.
 import { Picture } from 'astro:assets';
-import { heroImages } from '../data/content.js';
+import { introImages } from '../data/content.js';
 
 // Paths do logo do Figma (nó 783:312), uma letra por path.
 const letters = [
@@ -18,7 +18,7 @@ const letters = [
 
 <div class="intro" aria-hidden="true">
   {
-    heroImages.map((img, i) => (
+    introImages.map((img, i) => (
       <div class={`intro__img i${i}`}>
         <Picture
           src={img.src}

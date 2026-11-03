@@ -963,7 +963,8 @@ body.is-locked .site-header.is-hidden {
 .marquee__track {
   display: flex;
   width: max-content;
-  animation: marquee 60s linear infinite;
+  /* 72s por volta = a mesma velocidade de antes (~49px/s) com as 9 imagens */
+  animation: marquee 72s linear infinite;
   will-change: transform;
 }
 .marquee__group {
@@ -985,25 +986,30 @@ body.is-locked .site-header.is-hidden {
   flex: none;
   overflow: hidden;
 }
-.marquee__item--a {
-  width: calc(300px * var(--s));
-  height: calc(400px * var(--s));
+/* Medidas do Figma (seção "conteudo"), alinhadas pela base */
+.marquee__item {
+  width: calc(var(--w) * 1px * var(--s));
+  height: calc(var(--h) * 1px * var(--s));
 }
-.marquee__item--b {
-  width: calc(250px * var(--s));
-  height: calc(333px * var(--s));
-}
-.marquee__item--c {
-  width: calc(280px * var(--s));
-  height: calc(373px * var(--s));
-}
+.mq1 { --w: 250; --h: 333; }
+.mq2 { --w: 582; --h: 403; }
+.mq3 { --w: 280; --h: 373; }
+.mq4 { --w: 437; --h: 444; }
+.mq5 { --w: 553; --h: 347; }
+.mq6 { --w: 437; --h: 400; }
+.mq7 { --w: 250; --h: 250; }
+.mq8 { --w: 280; --h: 373; }
+.mq9 { --w: 300; --h: 400; }
 .marquee__media,
 .marquee__media picture,
-.marquee__media img {
+.marquee__media img,
+.marquee__video {
   width: 100%;
   height: 100%;
 }
-.marquee__media img {
+.marquee__media img,
+.marquee__video {
+  display: block;
   object-fit: cover;
 }
 @media (max-width: 760px) {
@@ -1028,6 +1034,7 @@ body.is-locked .site-header.is-hidden {
 }
 .ten__box {
   position: relative;
+  container-type: inline-size;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
   place-items: center;
@@ -1187,6 +1194,16 @@ body.is-locked .site-header.is-hidden {
     display: none;
   }
 }
+/* Com o container mais estreito que o desenho (altura mínima de 460px, o
+   desenho é cortado dos lados), as linhas verticais vão chegando na borda e
+   viram um tracejado solto colado nela. Abaixo de 856px de largura (onde
+   ficariam a menos de 65px da borda), elas somem; os círculos continuam. */
+@container (max-width: 855px) {
+  .ten__lines,
+  .ten__line-cover {
+    display: none;
+  }
+}
 /* Sem JS: o tracejado já aparece pronto */
 html:not(.js) .ten__line-cover,
 html:not(.js) .ten__half {
@@ -1336,11 +1353,16 @@ html:not(.js) .ten__half {
   outline: 1px dotted var(--c-fg);
   outline-offset: -6px;
 }
-/* Conteúdo aberto: as imagens começam na altura do nome; o texto fica embaixo */
+/* Conteúdo aberto: as imagens começam na altura do nome e o fim do texto
+   fica sempre alinhado com o fim das imagens (pedido do João). Imagens e
+   texto se alinham pela base da grade; se o texto for mais alto que as
+   imagens (telas de ~760 a ~980px), as imagens descem até alinhar.
+   O corpo ocupa só a própria altura (não estica até a do maior item). */
 .svc__body {
   display: grid;
   grid-template-columns: var(--svc-cols);
   grid-template-rows: calc(var(--svc-name) * 0.9) 1fr auto;
+  align-self: start;
   column-gap: var(--svc-gap);
   padding: var(--svc-pad) var(--gutter);
   pointer-events: none;
@@ -1351,18 +1373,22 @@ html:not(.js) .ten__half {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-  align-self: start;
+  align-self: end;
 }
 .svc__media picture:first-child {
   grid-column: 1 / -1;
 }
+/* Proporções das imagens do Figma: principal 876×486 e detalhes 426×277 */
 .svc__img {
   display: block;
   width: 100%;
   height: auto;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 876 / 486;
   object-fit: cover;
   background: #111;
+}
+.svc__img--detail {
+  aspect-ratio: 426 / 277;
 }
 .svc__text {
   grid-column: 3 / 9;
@@ -1407,6 +1433,20 @@ html:not(.js) .ten__half {
 }
 .svc__item.is-open .svc__text {
   transition-delay: 0.2s;
+}
+/* Tablet: a coluna de texto é estreita; texto um pouco menor e mais largo
+   para as imagens descerem o mínimo ao alinhar o fim dos dois */
+@media (min-width: 761px) and (max-width: 1000px) {
+  .svc__text {
+    grid-column: 3 / 10;
+    padding-top: 24px;
+  }
+  .svc__desc {
+    font-size: 17px;
+  }
+  .svc__tags {
+    margin-top: 24px;
+  }
 }
 @media (max-width: 760px) {
   .svc {
@@ -1576,12 +1616,14 @@ html:not(.js) .ten__half {
   color: var(--c-soft);
   text-wrap: pretty;
 }
+/* Autor: foto em cima e nome e cargo embaixo, tudo centralizado (pedido do João) */
 .post-card__author {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   margin-top: auto;
-  text-align: left;
+  text-align: center;
   font-size: 14px;
   font-weight: 400;
 }
@@ -1594,8 +1636,8 @@ html:not(.js) .ten__half {
 }
 .post-card__author-text {
   display: grid;
+  justify-items: center;
   gap: 4px;
-  width: 137px;
   line-height: 1.1;
 }
 .post-card__role {
@@ -1724,6 +1766,10 @@ html:not(.js) .ten__half {
   letter-spacing: -0.015em;
   font-weight: 300;
   color: var(--c-soft);
+}
+/* Sem o link (ocultos por enquanto), a descrição fecha o item sem sobra embaixo */
+.client__desc:last-child {
+  margin-bottom: 0;
 }
 /* Link: sublinhado de 1px um pouco acima da base (como no work.co); no hover
    o texto escurece para 40% (o mesmo hover do menu) */

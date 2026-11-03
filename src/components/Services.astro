@@ -40,16 +40,16 @@ const pic = { formats: ['avif', 'webp'], fallbackFormat: 'jpg', quality: 85, loa
                 class="svc__img svc__img--main"
                 src={s.image}
                 alt={s.alt}
-                widths={[520, 780, 1040, 1300, 1560, 2080]}
+                widths={[520, 780, 1040, 1300, 1560, 2080, 2600, 3504]}
                 sizes="(max-width: 760px) 70vw, 36vw"
               />
               {s.details.map((d) => (
                 <Picture
                   {...pic}
-                  class="svc__img"
-                  src={d}
-                  alt=""
-                  widths={[260, 390, 520, 780, 1040]}
+                  class="svc__img svc__img--detail"
+                  src={d.src}
+                  alt={d.alt}
+                  widths={[260, 390, 520, 780, 1040, 1300, 1704]}
                   sizes="(max-width: 760px) 34vw, 18vw"
                 />
               ))}
