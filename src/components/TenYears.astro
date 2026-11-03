@@ -29,12 +29,11 @@ const circles = [
   { key: 'mid', y: cy },
 ];
 ---
----
 
 <section class="ten" aria-labelledby="ten-title">
   <div class="ten__box" data-draw data-header-solid>
     <div class="ten__art" aria-hidden="true">
-      <svg class="ten__layer" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" focusable="false">
+      <svg class="ten__layer ten__lines" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" focusable="false">
         <g class="ten__dash">{lines.map((x) => <line x1={x} y1="0" x2={x} y2={H} />)}</g>
       </svg>
       {lines.map((_, i) => <span class={`ten__line-cover tl${i}`} />)}
