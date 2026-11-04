@@ -156,10 +156,10 @@ export const posts = [
 ];
 
 // Links do menu aberto e do footer (os mesmos nos dois, pedido do João).
-// Troque o "#" do About pela página quando ela existir.
+// Troque o "#" do Sobre pela página quando ela existir.
 export const nav = [
   { label: 'Home', href: '/' },
-  { label: 'About', href: '#' },
+  { label: 'Sobre', href: '#' },
   { label: 'Blog', href: '#blog' },
   { label: 'Contato', href: '#contato' },
 ];
@@ -233,3 +233,66 @@ export const clients = [
     link: caseLink,
   },
 ];
+
+// Formulário de contato: cópia do drawer de contato do meiuca.design (o
+// componente ContactDrawer do Framer). Abre pelos links "Contato" (#contato).
+// O envio vai para o mesmo webhook do Make do meiuca.design, que encaminha
+// para o mesmo e-mail. Os campos enviados têm os mesmos nomes de lá (nome,
+// telefone, email, motivo, mensagem, pagina, idioma, enviadoEm).
+export const contactForm = {
+  webhook: 'https://hook.us2.make.com/4kdmt7z256qn1qrg0ik3xs2qyk0t58j0',
+  title: 'Contato',
+  close: 'Fechar',
+  labels: { nome: 'Nome', telefone: 'Telefone', email: 'E-mail', motivo: 'Motivo', mensagem: 'Mensagem', optional: '(opcional)' },
+  // value = o que vai no envio (igual ao meiuca.design); label = o que aparece
+  reasons: ['Design System', 'Aplicativos', 'Sistemas Web', 'Agent Experience', 'Ventures', 'Outro assunto'].map((v) => ({ value: v, label: v })),
+  privacy: {
+    text: 'Nunca vamos compartilhar suas informações. Ao enviar, você concorda com a nossa',
+    linkLabel: 'política de privacidade',
+    linkUrl: 'https://lgpd.meiuca.co/',
+  },
+  sideLines: ['São Paulo / Brasil', 'Somos uma empresa remota', 'oi@meiuca.design'],
+  submit: 'Enviar',
+  sending: 'Enviando…',
+  success: { title: 'Mensagem enviada!', text: 'Obrigado pelo contato. Vamos responder no e-mail que você informou.' },
+  messages: {
+    required: 'Preencha este campo.',
+    invalidEmail: 'Digite um e-mail válido, como nome@empresa.com.',
+    invalidPhone: 'Digite um telefone com DDD, como (11) 99999-9999.',
+    sendError: 'Não foi possível enviar agora. Tente de novo ou escreva para oi@meiuca.design.',
+  },
+  honeypot: 'Não preencha',
+};
+
+// Textos fixos da interface (rótulos, botões, mensagens). A versão em inglês
+// fica em content.en.js (página /en/).
+export const ui = {
+  lang: 'pt-BR',
+  ogLocale: 'pt_BR',
+  title: 'Meiuca — Estúdio de design',
+  description:
+    'Somos um estúdio de design orgulhosamente brasileiro. Trabalhamos na intersecção de marca, experiência e interfaces.',
+  skip: 'Pular para o conteúdo',
+  home: 'Meiuca — página inicial',
+  menu: 'Menu',
+  close: 'Fechar',
+  watchReel: (d) => `Assistir ao reel da Meiuca (${d})`,
+  playReel: 'Play reel',
+  reelDialog: 'Reel da Meiuca',
+  mainNav: 'Principal',
+  langNav: 'Idioma',
+  intro: 'Estúdio de design — São Paulo',
+  heroLabel: 'Apresentação',
+  services: 'Serviços',
+  insights: 'Insights',
+  readArticle: 'Ler artigo',
+  seeMore: 'Ver mais',
+  clients: 'Clientes',
+  newsletter: 'Inscreva-se na news',
+  emailPlaceholder: 'exemplo@email.com',
+  subscribe: 'Inscrever',
+  newsletterError: 'Confere o e-mail? Parece que faltou alguma coisa.',
+  newsletterOk: 'Pronto! Você vai receber nossas próximas anotações.',
+  rights: 'Todos os direitos © Meiuca',
+  footerNav: 'Rodapé',
+};

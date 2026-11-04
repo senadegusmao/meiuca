@@ -24,7 +24,7 @@ let scrollToY = (y) => window.scrollTo({ top: y, behavior: reducedMotion.matches
 // O menu conversa com o reel fixo (esconder ao abrir, abrir a partir do reel do menu)
 let reelApi = null;
 const canScrollInside = (target) => {
-  const box = target instanceof Element ? target.closest('.menu__grid') : null;
+  const box = target instanceof Element ? target.closest('.menu__grid, .cd__panel') : null;
   return !!box && box.scrollHeight > box.clientHeight;
 };
 const blockScroll = (e) => {
@@ -32,7 +32,7 @@ const blockScroll = (e) => {
 };
 const scrollKeys = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ']);
 const blockKeys = (e) => {
-  if (scrollKeys.has(e.key) && !e.target.closest?.('input, textarea, button, [contenteditable]')) e.preventDefault();
+  if (scrollKeys.has(e.key) && !e.target.closest?.('input, textarea, select, button, [contenteditable], .cd__panel')) e.preventDefault();
 };
 const locks = new Set();
 const noBlend = new Set();
@@ -156,7 +156,7 @@ function initMenu() {
       animateTo(0, () => {
         menu.hidden = true;
         setNoBlend(false, 'menu');
-        reelApi?.setAway(false); // e volta quando o menu termina de fechar
+        if (!locks.has('contact')) reelApi?.setAway(false); // e volta quando o menu termina de fechar (se o contato não abriu)
       });
     }
   };
@@ -341,7 +341,7 @@ function initReel() {
     if (onMeiuca) {
       upgrade = document.createElement('iframe');
       upgrade.src = `https://player.vimeo.com/video/${el.dataset.vimeoId}?autoplay=1&dnt=1&title=0&byline=0&portrait=0`;
-      upgrade.title = 'Reel da Meiuca';
+      upgrade.title = document.querySelector('[data-reel-dialog]')?.getAttribute('aria-label') || 'Reel';
       upgrade.allow = 'autoplay; fullscreen; picture-in-picture';
       upgrade.referrerPolicy = 'strict-origin-when-cross-origin';
       upgrade.className = 'reel__upgrade';
@@ -561,6 +561,34 @@ function initHeaderBlend() {
 }
 
 /* ---------------------------------------------------------
+   Hero: cada imagem do marquee aparece pelo menos pela metade na primeira
+   dobra, em qualquer tela (pedido do João). O Figma pede 256px acima do
+   texto e entre o texto e as imagens; em telas baixas esses dois espaços
+   diminuem juntos (até um mínimo) para as imagens subirem. As imagens são
+   alinhadas pela base, então basta a mais baixa aparecer pela metade.
+   A altura usada é a "pequena" (100svh, com as barras do navegador à
+   mostra): não muda quando elas somem no celular.
+   --------------------------------------------------------- */
+function initHeroFold() {
+  const hero = document.querySelector('.hero');
+  const text = hero?.querySelector('.hero__desc');
+  const marquee = hero?.querySelector('[data-marquee]');
+  const probe = hero?.querySelector('[data-hero-probe]');
+  if (!hero || !text || !marquee || !probe) return;
+  const items = [...marquee.querySelector('.marquee__group').children];
+  measurers.push(() => {
+    const space = probe.offsetWidth; // var(--space-256)
+    const fold = probe.offsetHeight || window.innerHeight; // 100svh
+    const headerH = document.querySelector('[data-header]')?.offsetHeight || 0;
+    const shortest = Math.min(...items.map((it) => it.offsetHeight));
+    const need = marquee.offsetHeight - shortest / 2;
+    const free = fold - headerH - text.offsetHeight - need;
+    const gap = Math.max(24, Math.round(space / 8), Math.min(space, Math.floor(free / 2)));
+    hero.style.setProperty('--hero-space', `${gap}px`);
+  });
+}
+
+/* ---------------------------------------------------------
    Hero: palavras acendem conforme o scroll (efeito Prolab)
    --------------------------------------------------------- */
 function initScrollWords() {
@@ -614,12 +642,18 @@ function initServices() {
   const items = [...list.querySelectorAll('[data-svc-item]')];
   // Altura aberta igual para todos (a do maior): ao trocar de item, o total da
   // lista não muda e o que está abaixo fica parado
+  // Mede sem abrir nem fechar nada: o corpo de cada item já tem a altura de
+  // aberto (o <li> só recorta). Abrir todos e fechar de novo para medir fazia
+  // a página pular (no celular, ao rolar para cima, ia direto para Insights).
   measurers.push(() => {
-    list.style.removeProperty('--svc-open');
-    const was = items.map((it) => it.classList.contains('is-expanded'));
-    items.forEach((it) => it.classList.add('is-expanded'));
-    const max = Math.max(...items.map((it) => it.offsetHeight));
-    items.forEach((it, i) => it.classList.toggle('is-expanded', was[i]));
+    const max = Math.max(
+      ...items.map((it) => {
+        const inner = it.querySelector('.svc__inner');
+        const btn = it.querySelector('.svc__btn');
+        const body = it.querySelector('.svc__body');
+        return Math.max(btn.offsetHeight, body.offsetHeight) + inner.offsetHeight - inner.clientHeight;
+      }),
+    );
     list.style.setProperty('--svc-open', `${max}px`);
   });
   let listH = 0;
@@ -990,6 +1024,257 @@ function initSmoothScroll() {
 }
 
 /* ---------------------------------------------------------
+   Formulário de contato: mesmo comportamento do drawer de contato do
+   meiuca.design (componente ContactDrawer do Framer, lido no site):
+   - abre pelos links para #contato/#contact (menu, footer) e com o hash
+     na URL; ao fechar, o hash sai da URL;
+   - trava a página, foca o Nome (no celular, o painel), prende o Tab
+     dentro dele, fecha com Esc, no fundo ou no X e devolve o foco;
+   - valida ao sair de cada campo e de novo ao digitar depois disso;
+     máscara de telefone (11) 99999-9999; no envio, foca o primeiro erro;
+   - "isca" preenchida = robô: mostra sucesso sem enviar;
+   - envia em JSON para o webhook; se o navegador bloquear (CORS), reenvia
+     como formulário simples (no-cors), como no original.
+   --------------------------------------------------------- */
+function initContact() {
+  const root = document.querySelector('[data-contact]');
+  if (!root) return;
+  const panel = root.querySelector('[data-contact-panel]');
+  const form = root.querySelector('[data-contact-form]');
+  const success = root.querySelector('[data-contact-success]');
+  const sendError = root.querySelector('[data-contact-error]');
+  const submit = form.querySelector('[type="submit"]');
+  const honeypot = form.querySelector('[name="empresa_site"]');
+  const fields = [...form.querySelectorAll('[data-field]')].map((wrap) => ({
+    name: wrap.dataset.field,
+    wrap,
+    input: wrap.querySelector('.cd__input'),
+    msg: wrap.querySelector('.cd__msg'),
+    touched: false,
+    error: '',
+  }));
+  const byName = Object.fromEntries(fields.map((f) => [f.name, f]));
+  const msgs = { required: form.dataset.msgRequired, email: form.dataset.msgEmail, phone: form.dataset.msgPhone };
+  const DURATION = () => (reducedMotion.matches ? 0 : 450);
+  const HASHES = ['contato', 'contact'];
+  const FOCUSABLE =
+    'a[href], button:not([disabled]), input:not([disabled]):not([tabindex="-1"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  const digits = (v) => v.replace(/\D/g, '');
+  const maskPhone = (v) => {
+    if (v.trim().startsWith('+')) return '+' + v.replace(/[^\d ]/g, '').slice(0, 20);
+    const d = digits(v).slice(0, 11);
+    if (!d.length) return '';
+    if (d.length <= 2) return `(${d}`;
+    if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+    if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+    return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  };
+  const validPhone = (v) => {
+    const d = digits(v);
+    return v.trim().startsWith('+') ? d.length >= 8 && d.length <= 15 : d.length === 10 || d.length === 11;
+  };
+  const check = (f) => {
+    const v = f.input.value.trim();
+    if (f.name === 'telefone') return v && !validPhone(v) ? msgs.phone : '';
+    if (f.name === 'email') return !v ? msgs.required : EMAIL.test(v) ? '' : msgs.email;
+    return v ? '' : msgs.required;
+  };
+  const paint = (f) => {
+    const shown = f.touched && f.error ? f.error : '';
+    const active = document.activeElement === f.input || f.input.value !== '';
+    f.wrap.classList.toggle('is-active', active);
+    f.wrap.classList.toggle('is-invalid', !!shown);
+    f.msg.textContent = shown;
+    if (shown) {
+      f.msg.setAttribute('role', 'alert');
+      f.input.setAttribute('aria-describedby', f.msg.id);
+    } else {
+      f.msg.removeAttribute('role');
+      f.input.removeAttribute('aria-describedby');
+    }
+    f.input.setAttribute('aria-invalid', String(!!shown));
+  };
+  let status = 'idle'; // idle | sending | success | error
+  const setStatus = (s) => {
+    status = s;
+    const sending = s === 'sending';
+    submit.disabled = sending;
+    submit.setAttribute('aria-busy', String(sending));
+    submit.textContent = sending ? form.dataset.labelSending : form.dataset.labelSubmit;
+    sendError.hidden = s !== 'error';
+    form.hidden = s === 'success';
+    success.hidden = s !== 'success';
+  };
+  const reset = () => {
+    form.reset();
+    honeypot.value = '';
+    fields.forEach((f) => {
+      f.touched = false;
+      f.error = '';
+      if (f.name === 'mensagem') f.input.style.height = '';
+      paint(f);
+    });
+    setStatus('idle');
+  };
+
+  fields.forEach((f) => {
+    f.input.addEventListener('focus', () => paint(f));
+    f.input.addEventListener('blur', () => {
+      f.touched = true;
+      if (f.input.value.trim() !== '' || f.error) f.error = check(f);
+      paint(f);
+    });
+    const onInput = () => {
+      if (f.name === 'telefone') {
+        const masked = maskPhone(f.input.value);
+        if (masked !== f.input.value) f.input.value = masked;
+      }
+      if (f.name === 'mensagem') {
+        f.input.style.height = 'auto';
+        f.input.style.height = `${Math.max(148, Math.min(f.input.scrollHeight + 1, 360))}px`;
+      }
+      if (f.touched || f.error) f.error = check(f);
+      paint(f);
+      if (status === 'error') setStatus('idle');
+    };
+    f.input.addEventListener(f.input.tagName === 'SELECT' ? 'change' : 'input', onInput);
+  });
+
+  const post = async (data) => {
+    const url = (form.dataset.endpoint || '').trim();
+    if (!url) throw new Error('Webhook não configurado');
+    try {
+      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch (err) {
+      if (!(err instanceof TypeError)) throw err;
+      // Sem CORS: envio simples, sem ler a resposta (como no original)
+      await fetch(url, { method: 'POST', mode: 'no-cors', body: new URLSearchParams(data) });
+    }
+  };
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (status === 'sending') return;
+    fields.forEach((f) => {
+      f.touched = true;
+      f.error = check(f);
+      paint(f);
+    });
+    const first = fields.find((f) => f.error);
+    if (first) {
+      first.input.focus();
+      return;
+    }
+    if (honeypot.value) {
+      setStatus('success');
+      return;
+    }
+    setStatus('sending');
+    try {
+      await post({
+        nome: byName.nome.input.value.trim(),
+        telefone: byName.telefone.input.value.trim(),
+        email: byName.email.input.value.trim(),
+        motivo: byName.motivo.input.value,
+        mensagem: byName.mensagem.input.value.trim(),
+        pagina: window.location.href,
+        idioma: document.documentElement.lang || '',
+        enviadoEm: new Date().toISOString(),
+      });
+      setStatus('success');
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({ event: 'contact_form_submit', contact_reason: byName.motivo.input.value });
+      setTimeout(() => success.focus(), 50);
+    } catch (err) {
+      console.error('[ContactDrawer] Falha no envio:', err);
+      setStatus('error');
+    }
+  });
+
+  let open = false;
+  let returnFocus = null;
+  let closeTimer = 0;
+  let focusTimer = 0;
+  const onKey = (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      hide();
+      return;
+    }
+    if (e.key !== 'Tab') return;
+    const list = [...panel.querySelectorAll(FOCUSABLE)].filter((el) => el.offsetParent !== null);
+    if (!list.length) return;
+    const firstEl = list[0];
+    const lastEl = list[list.length - 1];
+    const active = document.activeElement;
+    if (e.shiftKey && (active === firstEl || active === panel)) {
+      e.preventDefault();
+      lastEl.focus();
+    } else if (!e.shiftKey && active === lastEl) {
+      e.preventDefault();
+      firstEl.focus();
+    }
+  };
+  const show = () => {
+    if (open) return;
+    open = true;
+    clearTimeout(closeTimer);
+    returnFocus = document.activeElement;
+    if (status === 'success') reset();
+    root.hidden = false;
+    lockPage(true, 'contact');
+    setNoBlend(true, 'contact');
+    reelApi?.setAway(true);
+    requestAnimationFrame(() => requestAnimationFrame(() => root.classList.add('is-open')));
+    document.addEventListener('keydown', onKey);
+    focusTimer = setTimeout(() => {
+      const fine = window.matchMedia('(pointer: fine)').matches;
+      (fine ? byName.nome.input : panel).focus({ preventScroll: true });
+    }, 60);
+  };
+  const hide = () => {
+    if (!open) return;
+    open = false;
+    clearTimeout(focusTimer);
+    root.classList.remove('is-open');
+    document.removeEventListener('keydown', onKey);
+    closeTimer = setTimeout(() => {
+      root.hidden = true;
+      if (status === 'success') reset();
+      lockPage(false, 'contact');
+      setNoBlend(false, 'contact');
+      if (!locks.has('menu')) reelApi?.setAway(false);
+      (returnFocus?.isConnected ? returnFocus : null)?.focus?.({ preventScroll: true });
+      const h = window.location.hash.replace(/^#/, '').toLowerCase();
+      if (h && HASHES.includes(h)) history.replaceState(null, '', window.location.pathname + window.location.search);
+    }, DURATION());
+  };
+  root.querySelectorAll('[data-contact-close]').forEach((el) => el.addEventListener('click', hide));
+
+  const hashOf = (href) => {
+    const i = href.lastIndexOf('#');
+    return i >= 0 ? href.slice(i + 1).trim().toLowerCase() : '';
+  };
+  // Links para #contato abrem o formulário (na captura, antes de rolar a página)
+  document.addEventListener(
+    'click',
+    (e) => {
+      const a = e.target.closest?.('a');
+      if (!a || root.contains(a)) return;
+      if (!HASHES.includes(hashOf(a.getAttribute('href') || ''))) return;
+      e.preventDefault();
+      show();
+    },
+    true,
+  );
+  const fromHash = () => HASHES.includes(hashOf(window.location.hash)) && show();
+  window.addEventListener('hashchange', fromHash);
+  setTimeout(fromHash, 0);
+}
+
+/* ---------------------------------------------------------
    Newsletter (validação no navegador; conectar ao serviço depois)
    --------------------------------------------------------- */
 function initNewsletter() {
@@ -1004,7 +1289,7 @@ function initNewsletter() {
     msg.classList.remove('is-error', 'is-success');
     const value = input.value.trim();
     if (!input.checkValidity() || !value) {
-      msg.textContent = 'Confere o e-mail? Parece que faltou alguma coisa.';
+      msg.textContent = form.dataset.msgError || '';
       msg.classList.add('is-error');
       input.setAttribute('aria-invalid', 'true');
       input.focus();
@@ -1013,7 +1298,7 @@ function initNewsletter() {
     input.removeAttribute('aria-invalid');
     // TODO: enviar para o serviço de newsletter escolhido (ex.: fetch para o endpoint do provedor)
     // e liberar o domínio dele em connect-src / form-action na CSP (public/_headers e vercel.json).
-    msg.textContent = 'Pronto! Você vai receber nossas próximas anotações.';
+    msg.textContent = form.dataset.msgOk || '';
     msg.classList.add('is-success');
     form.reset();
     setTimeout(() => {
@@ -1043,9 +1328,22 @@ function initEntryCleanup() {
    Loop
    --------------------------------------------------------- */
 let ticking = false;
+// Medir pode mudar alturas acima do que está na tela (espaços do Hero,
+// espaçador de Serviços). Para a página não pular, a seção que está no topo
+// da tela volta para o mesmo lugar depois de medir.
+const sections = [...document.querySelectorAll('main > section, body > footer')];
 const measure = () => {
+  const anchor = window.scrollY > 0 ? sections.find((el) => el.getBoundingClientRect().bottom > 0) : null;
+  const before = anchor?.getBoundingClientRect().top;
   vh = window.innerHeight;
   measurers.forEach((m) => m());
+  if (anchor) {
+    const d = anchor.getBoundingClientRect().top - before;
+    if (Math.abs(d) > 0.5) {
+      window.scrollTo(0, window.scrollY + d);
+      stopSmooth?.(); // o scroll suave recomeça do lugar novo
+    }
+  }
 };
 const update = () => {
   ticking = false;
@@ -1060,6 +1358,7 @@ const requestUpdate = () => {
   }
 };
 
+initHeroFold(); // antes dos outros: muda a posição de tudo abaixo do Hero
 initMenu();
 initHeaderHide();
 initHeaderBlend();
@@ -1071,6 +1370,7 @@ initCursorPill();
 initMarquee();
 initWarmup();
 initNewsletter();
+initContact();
 initSmoothScroll();
 initEntryCleanup();
 
@@ -1079,9 +1379,20 @@ update();
 
 window.addEventListener('scroll', requestUpdate, { passive: true });
 let resizeTimer;
+let lastW = window.innerWidth;
+const touch = window.matchMedia('(pointer: coarse)');
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => {
+    // No celular, a barra do navegador aparece e some com o scroll e muda só a
+    // altura da tela. Nada do layout depende disso: remedir aí mudava alturas
+    // acima do que está na tela e a página pulava.
+    const w = window.innerWidth;
+    if (touch.matches && w === lastW) {
+      update();
+      return;
+    }
+    lastW = w;
     measure();
     update();
   }, 120);

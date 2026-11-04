@@ -1,8 +1,9 @@
 ---
-import { nav, contact } from '../data/content.js';
+import { getContent } from '../data/i18n.js';
 import Arrow from '../assets/svg/arrow.svg';
 import { withBase } from '../lib/url.js';
 
+const { nav, contact, ui } = getContent(Astro.currentLocale);
 const year = new Date().getFullYear();
 
 // Paths do logo do Figma (nó 783:312), separados por letra para a animação.
@@ -28,8 +29,8 @@ const letters = [
 
 <footer class="footer" id="contato">
   <div class="footer__top">
-    <form class="newsletter reveal" action="#" method="post" novalidate data-newsletter>
-      <label class="newsletter__label" for="newsletter-email">Inscreva-se na news</label>
+    <form class="newsletter reveal" action="#" method="post" novalidate data-newsletter data-msg-error={ui.newsletterError} data-msg-ok={ui.newsletterOk}>
+      <label class="newsletter__label" for="newsletter-email">{ui.newsletter}</label>
       <div class="newsletter__field">
         <input
           id="newsletter-email"
@@ -37,24 +38,24 @@ const letters = [
           type="email"
           inputmode="email"
           autocomplete="email"
-          placeholder="exemplo@email.com"
+          placeholder={ui.emailPlaceholder}
           maxlength="254"
           required
           aria-describedby="newsletter-help"
         />
-        <button class="newsletter__submit" type="submit" aria-label="Inscrever">
+        <button class="newsletter__submit" type="submit" aria-label={ui.subscribe}>
           <Arrow width="16" height="16" aria-hidden="true" />
         </button>
       </div>
       <p class="newsletter__help" id="newsletter-help" data-newsletter-msg aria-live="polite"></p>
     </form>
-    <p class="footer__copy reveal">Todos os direitos © Meiuca {year}</p>
+    <p class="footer__copy reveal">{ui.rights} {year}</p>
   </div>
 
   <hr class="footer__rule" />
 
   <div class="footer__links reveal">
-    <nav aria-label="Rodapé">
+    <nav aria-label={ui.footerNav}>
       <ul class="footer__list" role="list">
         {nav.map((item) => <li><a href={withBase(item.href)}>{item.label}</a></li>)}
       </ul>

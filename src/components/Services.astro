@@ -1,17 +1,18 @@
 ---
 import { Picture } from 'astro:assets';
-import { services } from '../data/content.js';
+import { getContent } from '../data/i18n.js';
 import SplitChars from './SplitChars.astro';
 
 // Layout do iverson.inc (seção Services): lista em sanfona. Só um serviço fica
 // aberto por vez; o aberto mostra a descrição e as tags embaixo à esquerda e as
 // imagens à direita, alinhadas ao nome. Com o scroll, a seção fica presa e cada
 // serviço abre na sua vez (clicar num nome rola até a vez dele).
+const { services, ui } = getContent(Astro.currentLocale);
 const pic = { formats: ['avif', 'webp'], fallbackFormat: 'jpg', quality: 85, loading: 'lazy', decoding: 'async' };
 ---
 
 <section class="services" id="servicos" aria-labelledby="services-title" data-svc-section>
-  <h2 class="services__title reveal-chars" id="services-title" data-reveal><SplitChars text="Serviços" /></h2>
+  <h2 class="services__title reveal-chars" id="services-title" data-reveal><SplitChars text={ui.services} /></h2>
   <!-- A lista fica presa enquanto o scroll abre um serviço por vez (initServices) -->
   <div class="services__stage" data-svc-stage>
 

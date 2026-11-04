@@ -1,19 +1,21 @@
 ---
 import { Picture, Image } from 'astro:assets';
-import { posts } from '../data/content.js';
+import { getContent } from '../data/i18n.js';
 import SplitChars from './SplitChars.astro';
+
+const { posts, ui } = getContent(Astro.currentLocale);
 ---
 
 <section class="blog" id="blog" aria-labelledby="blog-title">
   <header class="blog__header">
-    <h2 class="blog__title reveal-chars" id="blog-title" data-reveal><SplitChars text="Insights" /></h2>
+    <h2 class="blog__title reveal-chars" id="blog-title" data-reveal><SplitChars text={ui.insights} /></h2>
   </header>
 
   <ul class="blog__list" role="list" data-header-blend>
     {
       posts.map((post, i) => (
         <li class={`blog__item reveal reveal-d${i}`}>
-          <a class={`post-card${post.bg === 'soft' ? ' post-card--soft' : ''}`} href={post.href} data-cursor="Ler artigo">
+          <a class={`post-card${post.bg === 'soft' ? ' post-card--soft' : ''}`} href={post.href} data-cursor={ui.readArticle}>
             <span class="post-card__bg" aria-hidden="true">
               <Image src={post.image} alt="" widths={[260, 520]} sizes="520px" quality={80} loading="lazy" decoding="async" format="webp" />
             </span>
@@ -62,5 +64,5 @@ import SplitChars from './SplitChars.astro';
     }
   </ul>
 
-  <a class="pill-button reveal" href="#">Ver mais</a>
+  <a class="pill-button reveal" href="#">{ui.seeMore}</a>
 </section>

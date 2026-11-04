@@ -1,5 +1,5 @@
 ---
-import { tenYears } from '../data/content.js';
+import { getContent } from '../data/i18n.js';
 import SplitChars from './SplitChars.astro';
 
 // 10 Anos do Figma (nó 809:493): container azul (#001EFF, 1360×671 no
@@ -14,6 +14,7 @@ import SplitChars from './SplitChars.astro';
 // esquerda): ao girar, descobrem o traço no sentido horário a partir das
 // 12h e somem atrás do recorte. Medido no Chromium: 4 a 5 vezes mais quadros
 // do que com a máscara SVG animada que havia antes.
+const { tenYears } = getContent(Astro.currentLocale);
 const W = 1360;
 const H = 671;
 const cx = W / 2;

@@ -3,7 +3,9 @@
 // termina sozinha mesmo se o JavaScript falhar. Quem prefere menos
 // movimento não vê a intro.
 import { Picture } from 'astro:assets';
-import { introImages } from '../data/content.js';
+import { getContent } from '../data/i18n.js';
+
+const { introImages, ui } = getContent(Astro.currentLocale);
 
 // Paths do logo do Figma (nó 783:312), uma letra por path.
 const letters = [
@@ -41,6 +43,6 @@ const letters = [
   </div>
   <div class="intro__meta">
     <span class="intro__count"></span>
-    <span>Estúdio de design — São Paulo</span>
+    <span>{ui.intro}</span>
   </div>
 </div>

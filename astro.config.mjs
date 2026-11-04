@@ -13,6 +13,12 @@ export default defineConfig({
   site,
   base,
   compressHTML: true,
+  // Português na raiz (/) e inglês em /en/ (textos em src/data/content*.js)
+  i18n: {
+    locales: ['pt', 'en'],
+    defaultLocale: 'pt',
+    routing: { prefixDefaultLocale: false },
+  },
   build: {
     // CSS sempre em arquivo externo: permite uma Content Security Policy sem 'unsafe-inline'.
     inlineStylesheets: 'never',

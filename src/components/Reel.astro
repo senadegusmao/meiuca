@@ -1,13 +1,14 @@
 ---
 import { getImage } from 'astro:assets';
 import reelPoster from '../assets/images/reel-poster.png';
-import { reel } from '../data/content.js';
+import { getContent } from '../data/i18n.js';
 import { withBase } from '../lib/url.js';
 
 // Reel fixo no canto inferior direito (comportamento do mouthwash.studio/studio):
 // pequeno, em loop e sem som; dá para arrastar (volta sozinho para o canto) e,
 // ao clicar, ele cresce até o centro da tela. Em meiuca.design o vídeo completo
 // do Vimeo entra por cima; nos outros endereços, a prévia em alta.
+const { reel, ui } = getContent(Astro.currentLocale);
 const posterSmall = await getImage({ src: reelPoster, width: 480, format: 'webp', quality: 80 });
 const posterLarge = await getImage({ src: reelPoster, width: 1280, format: 'webp', quality: 82 });
 ---
@@ -40,14 +41,14 @@ const posterLarge = await getImage({ src: reelPoster, width: 1280, format: 'webp
     <button
       class="reel__hit"
       type="button"
-      aria-label={`Assistir ao reel da Meiuca (${reel.duration})`}
+      aria-label={ui.watchReel(reel.duration)}
       aria-haspopup="dialog"
       data-reel-open
     ></button>
     <p class="reel__title" aria-hidden="true">{reel.title} · {reel.duration}</p>
   </div>
 
-  <div class="reel__dialog" role="dialog" aria-modal="true" aria-label="Reel da Meiuca" hidden data-reel-dialog>
-    <button class="reel__close" type="button" data-reel-close>Fechar</button>
+  <div class="reel__dialog" role="dialog" aria-modal="true" aria-label={ui.reelDialog} hidden data-reel-dialog>
+    <button class="reel__close" type="button" data-reel-close>{ui.close}</button>
   </div>
 </div>
