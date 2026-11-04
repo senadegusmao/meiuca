@@ -1,0 +1,30 @@
+---
+// A home inteira; as páginas / (português) e /en/ (inglês) só a renderizam.
+// Cada componente pega os textos da língua da página (Astro.currentLocale).
+import Base from './Base.astro';
+import Intro from '../components/Intro.astro';
+import Header from '../components/Header.astro';
+import Hero from '../components/Hero.astro';
+import TenYears from '../components/TenYears.astro';
+import Services from '../components/Services.astro';
+import Blog from '../components/Blog.astro';
+import Clients from '../components/Clients.astro';
+import Footer from '../components/Footer.astro';
+import Reel from '../components/Reel.astro';
+import ContactDrawer from '../components/ContactDrawer.astro';
+---
+
+<Base>
+  <Intro />
+  <Header />
+  <main id="conteudo">
+    <Hero />
+    <TenYears />
+    <Services />
+    <Blog />
+    <Clients />
+  </main>
+  <Footer />
+  <Reel />
+  <ContactDrawer />
+</Base>

@@ -2,14 +2,16 @@
 import { getImage } from 'astro:assets';
 import Logo from '../assets/svg/logo.svg';
 import reelPoster from '../assets/images/reel-poster.png';
-import { menu, reel } from '../data/content.js';
+import { getContent, homes } from '../data/i18n.js';
 import { withBase } from '../lib/url.js';
 
+const lang = Astro.currentLocale === 'en' ? 'en' : 'pt';
+const { menu, reel, ui } = getContent(lang);
 const poster = await getImage({ src: reelPoster, width: 1280, format: 'webp', quality: 82 });
 ---
 
 <header class="site-header" data-header>
-  <a href={withBase('/')} class="site-header__logo enter d1" aria-label="Meiuca — página inicial">
+  <a href={withBase(homes[lang])} class="site-header__logo enter d1" aria-label={ui.home}>
     <Logo width="100" height="30" aria-hidden="true" />
   </a>
   <button
@@ -19,8 +21,8 @@ const poster = await getImage({ src: reelPoster, width: 1280, format: 'webp', qu
     aria-controls="menu"
     data-menu-toggle
   >
-    <span class="site-header__toggle-label" data-label-closed>Menu</span>
-    <span class="site-header__toggle-label" data-label-open aria-hidden="true">Fechar</span>
+    <span class="site-header__toggle-label" data-label-closed>{ui.menu}</span>
+    <span class="site-header__toggle-label" data-label-open aria-hidden="true">{ui.close}</span>
   </button>
 </header>
 
@@ -39,7 +41,7 @@ const poster = await getImage({ src: reelPoster, width: 1280, format: 'webp', qu
   <div class="menu__panel">
     <div class="menu__grid">
       <div class="menu__reel">
-        <button class="menu__reel-media" type="button" data-menu-reel aria-label={`Assistir ao reel da Meiuca (${reel.duration})`}>
+        <button class="menu__reel-media" type="button" data-menu-reel aria-label={ui.watchReel(reel.duration)}>
           <video
             muted
             loop
@@ -54,10 +56,10 @@ const poster = await getImage({ src: reelPoster, width: 1280, format: 'webp', qu
             <source data-src={withBase('/media/reel-preview.mp4')} type="video/mp4" />
           </video>
         </button>
-        <p class="menu__reel-label">Play reel - {reel.duration}</p>
+        <p class="menu__reel-label">{ui.playReel} - {reel.duration}</p>
       </div>
 
-      <nav class="menu__nav" aria-label="Principal">
+      <nav class="menu__nav" aria-label={ui.mainNav}>
         <ul class="menu__list" role="list">
           {
             menu.map((item) => (
@@ -69,6 +71,12 @@ const poster = await getImage({ src: reelPoster, width: 1280, format: 'webp', qu
             ))
           }
         </ul>
+        <!-- Troca de língua: português na raiz (/) e inglês em /en/ -->
+        <div class="menu__lang" role="group" aria-label={ui.langNav}>
+          <a href={withBase(homes.pt)} hreflang="pt-BR" lang="pt-BR" aria-current={lang === 'pt' ? 'page' : undefined}>PT</a>
+          <span aria-hidden="true">/</span>
+          <a href={withBase(homes.en)} hreflang="en" lang="en" aria-current={lang === 'en' ? 'page' : undefined}>EN</a>
+        </div>
       </nav>
     </div>
   </div>

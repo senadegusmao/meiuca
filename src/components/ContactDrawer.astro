@@ -1,0 +1,115 @@
+---
+// Formulário de contato: mesmo comportamento do drawer de contato do
+// meiuca.design (componente ContactDrawer do Framer, lido no código do site),
+// com o visual deste site (pedido do João): vidro escuro como o do menu,
+// fundo do reel aberto, "Fechar" do header, pílula do "Ver mais".
+// - Abre pelos links para #contato (menu e footer) e com #contato na URL.
+// - Painel que entra da direita (60% da tela, no mínimo 560px); no celular
+//   (até 809px) sobe de baixo com 95% da altura. 450ms, cubic-bezier(.22,1,.36,1).
+// - Campos com rótulo que sobe ao focar/preencher, validação ao sair do campo,
+//   máscara de telefone, "isca" contra robôs e envio para o webhook do Make
+//   (o mesmo do meiuca.design, que encaminha para o mesmo e-mail).
+// O comportamento fica em initContact (main.js).
+import { getContent } from '../data/i18n.js';
+
+const { contactForm: c } = getContent(Astro.currentLocale);
+const fields = [
+  { name: 'nome', type: 'text', autocomplete: 'name', required: true },
+  { name: 'telefone', type: 'tel', autocomplete: 'tel', inputmode: 'tel', required: false },
+  { name: 'email', type: 'email', autocomplete: 'email', inputmode: 'email', required: true },
+  { name: 'motivo', select: true, required: true },
+  { name: 'mensagem', textarea: true, required: true },
+];
+// Ícones do componente original (Phosphor)
+const icons = {
+  check: 'M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z',
+  caret: 'M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z',
+};
+---
+
+<div class="cd" data-contact hidden>
+  <div class="cd__backdrop" data-contact-close aria-hidden="true"></div>
+  <div class="cd__panel" role="dialog" aria-modal="true" aria-labelledby="cd-title" tabindex="-1" data-contact-panel>
+    <div class="cd__wrap">
+      <div class="cd__header">
+        <h2 class="cd__title" id="cd-title">{c.title}</h2>
+        <!-- Mesmo "Fechar" do header com o menu aberto (e no mesmo lugar) -->
+        <button class="cd__close" type="button" data-contact-close>{c.close}</button>
+      </div>
+      <div class="cd__body">
+        <form
+          class="cd__form"
+          novalidate
+          aria-labelledby="cd-title"
+          data-contact-form
+          data-endpoint={c.webhook}
+          data-msg-required={c.messages.required}
+          data-msg-email={c.messages.invalidEmail}
+          data-msg-phone={c.messages.invalidPhone}
+          data-label-submit={c.submit}
+          data-label-sending={c.sending}
+        >
+          {
+            fields.map((f) => (
+              <div class={`cd__field cd__field--${f.name}`} data-field={f.name}>
+                <label class="cd__label" for={`cd-${f.name}`}>
+                  {c.labels[f.name]}
+                  {!f.required && <span class="cd__optional"> {c.labels.optional}</span>}
+                </label>
+                {f.select ? (
+                  <div class="cd__select">
+                    <select class="cd__input" id={`cd-${f.name}`} name={f.name} required aria-required="true">
+                      <option value="" disabled selected hidden></option>
+                      {c.reasons.map((r) => (
+                        <option value={r.value}>{r.label}</option>
+                      ))}
+                    </select>
+                    <svg class="cd__caret" viewBox="0 0 256 256" width="20" height="20" aria-hidden="true" focusable="false"><path d={icons.caret} /></svg>
+                  </div>
+                ) : f.textarea ? (
+                  <textarea class="cd__input" id={`cd-${f.name}`} name={f.name} rows="3" autocomplete="off" placeholder=" " required aria-required="true"></textarea>
+                ) : (
+                  <input
+                    class="cd__input"
+                    id={`cd-${f.name}`}
+                    name={f.name}
+                    type={f.type}
+                    inputmode={f.inputmode}
+                    autocomplete={f.autocomplete}
+                    placeholder=" "
+                    required={f.required}
+                    aria-required={f.required ? 'true' : 'false'}
+                  />
+                )}
+                <div class="cd__msg" id={`cd-${f.name}-err`}></div>
+              </div>
+            ))
+          }
+          <!-- Isca contra robôs: escondida; se vier preenchida, finge que enviou -->
+          <div class="cd__hp" aria-hidden="true">
+            <label>{c.honeypot}<input type="text" name="empresa_site" tabindex="-1" autocomplete="off" /></label>
+          </div>
+          <p class="cd__privacy">
+            {c.privacy.text} <a href={c.privacy.linkUrl} target="_blank" rel="noopener">{c.privacy.linkLabel}</a>.
+          </p>
+          <p class="cd__error" role="alert" hidden data-contact-error>{c.messages.sendError}</p>
+          <div class="cd__actions">
+            <button class="cd__submit pill-button" type="submit">{c.submit}</button>
+          </div>
+        </form>
+        <div class="cd__success" tabindex="-1" role="status" aria-live="polite" hidden data-contact-success>
+          <svg viewBox="0 0 256 256" width="112" height="112" aria-hidden="true" focusable="false"><path d={icons.check} /></svg>
+          <p class="cd__success-title">{c.success.title}</p>
+          <p class="cd__success-text">{c.success.text}</p>
+        </div>
+        <div class="cd__side">
+          {
+            c.sideLines.map((line) =>
+              line.includes('@') && !line.includes(' ') ? <a href={`mailto:${line}`}>{line}</a> : <div>{line}</div>,
+            )
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

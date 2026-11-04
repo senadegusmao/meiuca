@@ -1,16 +1,17 @@
 ---
-import { clients, showCaseLinks } from '../data/content.js';
+import { getContent } from '../data/i18n.js';
 import { withBase } from '../lib/url.js';
 import SplitChars from './SplitChars.astro';
 
 // Layout do work.co/clients: grade de 3 colunas, o título do módulo ocupa a
 // primeira célula e cada cliente tem nome, descrição e link. Os links ficam
 // alinhados na base de cada linha (ocultos por enquanto: `showCaseLinks`).
-// Conteúdo em `clients`, no content.js.
+// Conteúdo em `clients`, no content.js (inglês em content.en.js).
+const { clients, showCaseLinks, ui } = getContent(Astro.currentLocale);
 ---
 
 <section class="clients" aria-labelledby="clients-title">
-  <h2 class="clients__title reveal-chars" id="clients-title" data-reveal><SplitChars text="Clientes" /></h2>
+  <h2 class="clients__title reveal-chars" id="clients-title" data-reveal><SplitChars text={ui.clients} /></h2>
   {
     clients.map((c, i) => (
       <article class={`client reveal reveal-d${(i + 1) % 3}`}>

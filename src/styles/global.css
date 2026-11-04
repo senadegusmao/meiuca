@@ -568,7 +568,14 @@ address {
   opacity: 0;
   pointer-events: none;
 }
-.site-header.is-hidden:focus-within,
+/* Só o foco do teclado (:focus-visible): depois de abrir e fechar o menu com
+   o mouse o botão continua focado, e com :focus-within o header não sumia
+   mais no footer. Regras separadas: sem suporte a :has, a de baixo vale. */
+.site-header.is-hidden:has(:focus-visible) {
+  transform: none;
+  opacity: 1;
+  pointer-events: auto;
+}
 body.is-locked .site-header.is-hidden {
   transform: none;
   opacity: 1;
@@ -585,7 +592,7 @@ body.is-locked .site-header.is-hidden {
   height: 30px;
   margin: 0 -12px;
   padding: 0 12px;
-  border-radius: 4px;
+  border-radius: 100px; /* pílula totalmente arredondada (pedido do João) */
   font-size: 16px;
   font-weight: 300;
   line-height: 1.6;
@@ -752,6 +759,29 @@ body.is-locked .site-header.is-hidden {
 }
 .menu__link:focus-visible {
   outline-offset: 2px;
+}
+/* PT / EN embaixo dos links: a língua atual em branco, a outra a 40% */
+.menu__lang {
+  display: flex;
+  gap: 8px;
+  margin-top: 32px;
+  font-size: 16px;
+  line-height: 1.6;
+  font-weight: 300;
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.4);
+}
+.menu__lang a {
+  color: rgba(255, 255, 255, 0.4);
+  transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.menu__lang a[aria-current='page'] {
+  color: var(--c-fg);
+}
+@media (hover: hover) {
+  .menu__lang a:hover {
+    color: var(--c-fg);
+  }
 }
 
 @media (max-width: 760px) {
@@ -932,18 +962,34 @@ body.is-locked .site-header.is-hidden {
    ========================================================= */
 
 .hero {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--space-256);
-  padding: calc(var(--header-h) + var(--space-256)) 0 var(--space-256);
+  /* Espaço acima do texto e entre o texto e as imagens: 256px do Figma, ou
+     menos em telas baixas para metade das imagens caber na primeira dobra
+     (--hero-space, calculado em initHeroFold) */
+  gap: var(--hero-space, var(--space-256));
+  padding: calc(var(--header-h) + var(--hero-space, var(--space-256))) 0 var(--space-256);
 }
+.hero__probe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--space-256);
+  height: 100vh;
+  height: 100svh;
+  visibility: hidden;
+  pointer-events: none;
+}
+/* Maior que no Figma (40px), pedido do João "para dar um punch"; em telas
+   baixas diminui um pouco para as imagens continuarem na primeira dobra */
 .hero__desc {
-  max-width: 840px;
+  max-width: 18.5em;
   margin-inline: var(--gutter);
-  font-size: var(--fs-40);
-  line-height: 1.2;
+  font-size: clamp(30px, min(4.17vw, 7.6svh), 60px);
+  line-height: 1.1;
   font-weight: 300;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.025em;
   text-wrap: pretty;
 }
 /* Cor de cada palavra é controlada pelo scroll (JS). Sem JS = branco. */
@@ -1532,6 +1578,11 @@ html:not(.js) .ten__half {
     gap: 16px;
   }
 }
+@media (max-width: 760px) {
+  .post-card {
+    padding: 72px 28px;
+  }
+}
 .blog__item {
   display: flex;
 }
@@ -1546,7 +1597,8 @@ html:not(.js) .ten__half {
   align-items: center;
   gap: 32px;
   min-height: 556px;
-  padding: 64px 20px;
+  /* Margem interna maior que no Figma (64/20), pedido do João */
+  padding: 80px 40px;
   background: var(--c-bg);
   text-align: center;
 }
@@ -2330,3 +2382,356 @@ html:not(.js) .ten__half {
 .cd237 { --cd: 2.844s; }
 .cd238 { --cd: 2.856s; }
 .cd239 { --cd: 2.868s; }
+
+/* =========================================================
+   Formulário de contato (ContactDrawer.astro, initContact)
+   Comportamento e medidas do drawer de contato do meiuca.design
+   (componente ContactDrawer do Framer); visual deste site, pedido do
+   João: o fundo do reel aberto (preto a 50% + blur de 30px), painel de
+   vidro como o do menu (branco a 10%), texto branco, linhas de 15%,
+   "Fechar" do header no mesmo lugar e a pílula do "Ver mais".
+   O painel desliza com transform, então não pode ter backdrop-filter
+   próprio (falha no desfoque): o vidro vem do desfoque do fundo.
+   ========================================================= */
+.cd {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  color: var(--c-fg);
+}
+.cd[hidden] {
+  display: none;
+}
+.cd__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(30px);
+  backdrop-filter: blur(30px);
+  opacity: 0;
+  transition: opacity 450ms ease;
+}
+.cd.is-open .cd__backdrop {
+  opacity: 1;
+}
+.cd__panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: min(100%, max(560px, 60%));
+  height: 100%;
+  padding: 0 var(--gutter) var(--gutter) 64px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  background: rgba(255, 255, 255, 0.1);
+  cursor: default;
+  transform: translateX(100%);
+  transition: transform 450ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.cd.is-open .cd__panel {
+  transform: none;
+}
+/* O painel recebe o foco ao abrir (no toque): sem contorno nele */
+.cd__panel:focus {
+  outline: none;
+}
+.cd button:focus-visible,
+.cd a:focus-visible {
+  outline: 1px dotted var(--c-fg);
+  outline-offset: 2px;
+}
+.cd__wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 64px;
+  min-height: 100%;
+}
+/* Cabeçalho na altura do header do site: o "Fechar" fica onde está o "Menu" */
+.cd__header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: var(--gutter);
+  padding-bottom: 8px;
+}
+.cd__title,
+.cd__success-title {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 300;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--c-fg);
+}
+/* Igual ao botão Menu/Fechar do header (pílula de vidro no hover) */
+.cd__close {
+  height: 30px;
+  margin: 0 -12px;
+  padding: 0 12px;
+  border-radius: 100px;
+  font-size: 16px;
+  font-weight: 300;
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+  background-color: rgba(255, 255, 255, 0);
+  transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+@media (hover: hover) {
+  .cd__close:hover {
+    background-color: rgba(255, 255, 255, 0.16);
+  }
+}
+.cd__body {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 64px;
+}
+.cd__form,
+.cd__success {
+  flex: 1 1 360px;
+  align-self: flex-start;
+  max-width: 640px;
+}
+.cd__form {
+  display: flex;
+  flex-direction: column;
+}
+.cd__form[hidden],
+.cd__success[hidden] {
+  display: none;
+}
+/* Campo de 80px: rótulo de 20px no meio; ao focar ou preencher ele sobe
+   e fica com 16px; linha de 15% (a dos módulos), branca quando ativo,
+   no vermelho claro da newsletter com erro */
+.cd__field {
+  position: relative;
+}
+.cd__label {
+  position: absolute;
+  top: 28px;
+  left: 0;
+  font-size: 20px;
+  font-weight: 300;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  color: var(--c-fg);
+  pointer-events: none;
+  transition:
+    top 0.2s ease,
+    font-size 0.2s ease,
+    color 0.2s ease;
+}
+.cd__field--mensagem .cd__label {
+  top: 16px;
+}
+.cd__field.is-active .cd__label {
+  top: 10.8px;
+  font-size: 16px;
+  color: var(--c-soft);
+}
+.cd__optional {
+  color: rgba(255, 255, 255, 0.4);
+}
+.cd__input {
+  display: block;
+  width: 100%;
+  height: 80px;
+  margin: 0;
+  padding: 36px 0 20px;
+  border: 0;
+  border-bottom: 1px solid var(--c-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 24px;
+  letter-spacing: 0.01em;
+  color: var(--c-fg);
+  caret-color: var(--c-fg);
+  cursor: text;
+  transition: border-color 0.2s ease;
+}
+.cd__input::placeholder {
+  color: transparent;
+}
+/* Preenchimento automático do navegador sem o fundo claro */
+.cd__input:-webkit-autofill {
+  -webkit-text-fill-color: var(--c-fg);
+  transition:
+    background-color 600000s 0s,
+    border-color 0.2s ease;
+}
+textarea.cd__input {
+  height: auto;
+  min-height: 148px;
+  resize: none;
+}
+select.cd__input {
+  padding-right: 32px;
+  cursor: pointer;
+}
+.cd__input option {
+  background: #141517;
+  color: var(--c-fg);
+}
+.cd__select {
+  position: relative;
+}
+.cd__caret {
+  position: absolute;
+  top: 30px;
+  right: 0;
+  fill: var(--c-fg);
+  pointer-events: none;
+}
+.cd__field.is-active .cd__input {
+  border-bottom-color: var(--c-fg);
+}
+.cd__field.is-invalid .cd__label {
+  color: #ff8a80;
+}
+.cd__field.is-invalid .cd__input {
+  border-bottom-color: #ff8a80;
+}
+.cd__msg {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #ff8a80;
+}
+.cd__field.is-invalid .cd__msg {
+  margin-top: 8px;
+}
+.cd__hp {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.cd__privacy {
+  max-width: 450px;
+  margin: 24px 0 0;
+  font-size: 14px;
+  font-weight: 300;
+  line-height: 1.4;
+  color: var(--c-soft);
+}
+.cd__privacy a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.cd__error {
+  margin: 24px 0 0;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #ff8a80;
+}
+.cd__error[hidden] {
+  display: none;
+}
+.cd__actions {
+  margin-top: 56px;
+}
+/* A pílula do "Ver mais" (.pill-button); enviando, ela apaga um pouco */
+.cd__submit:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+@media (hover: hover) {
+  .cd__submit:disabled:hover {
+    background: none;
+    color: var(--c-fg);
+    border-color: var(--c-line);
+  }
+}
+.cd__success {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  fill: var(--c-fg);
+  outline: none;
+}
+.cd__success-text {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 300;
+  line-height: 1.6;
+  color: var(--c-soft);
+}
+/* Como o endereço do footer: 14px, linhas a 16px, sublinhado no hover */
+.cd__side {
+  display: grid;
+  gap: 16px;
+  margin-left: auto;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1;
+  text-align: right;
+  color: var(--c-fg);
+}
+.cd__side a {
+  justify-self: end;
+  padding-bottom: 2px;
+  color: inherit;
+  background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat;
+  transition: background-size 0.5s var(--ease-out);
+}
+@media (hover: hover) {
+  .cd__side a:hover {
+    background-size: 100% 1px;
+  }
+}
+/* Celular (até 809px, como no original): sobe de baixo com 95% da altura */
+@media (max-width: 809px) {
+  .cd__panel {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 95%;
+    padding: 0 var(--gutter) var(--gutter);
+    transform: translateY(100%);
+  }
+  .cd__header {
+    padding-top: 24px;
+  }
+  .cd__title {
+    font-size: 20px;
+    letter-spacing: -0.01em;
+  }
+  .cd__body {
+    gap: 48px;
+  }
+  .cd__side {
+    align-self: flex-start;
+    margin-left: 0;
+    text-align: left;
+  }
+  .cd__side a {
+    justify-self: start;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cd__panel,
+  .cd__backdrop,
+  .cd * {
+    transition: none !important;
+  }
+}

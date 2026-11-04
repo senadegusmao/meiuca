@@ -1,9 +1,10 @@
 ---
 import { Picture, getImage } from 'astro:assets';
-import { heroText, heroImages } from '../data/content.js';
+import { getContent } from '../data/i18n.js';
 import { splitText } from '../lib/split.js';
 import { withBase } from '../lib/url.js';
 
+const { heroText, heroImages, ui } = getContent(Astro.currentLocale);
 const words = splitText(heroText);
 // A entrada letra por letra dura ~1,2s qualquer que seja o tamanho do texto.
 const total = words.reduce((n, w) => n + w.chars.length, 0);
@@ -17,7 +18,9 @@ const posters = await Promise.all(
 );
 ---
 
-<section class="hero" aria-label="Apresentação">
+<section class="hero" aria-label={ui.heroLabel}>
+  <!-- Medidas para o JS (initHeroFold): largura = espaço do Figma (256px), altura = 100svh -->
+  <span class="hero__probe" aria-hidden="true" data-hero-probe></span>
   <!-- Entrada: letra por letra com blur (Prolab), repetida quando o texto volta à tela. Cada palavra acende com o scroll. -->
   <h1 class="hero__desc" data-scroll-words data-replay>
     <span class="visually-hidden">{heroText}</span><span aria-hidden="true">{
