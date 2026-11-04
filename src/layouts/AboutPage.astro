@@ -1,0 +1,23 @@
+---
+// Página Sobre: /sobre/ (português) e /en/about/ (inglês). Mesmo header,
+// footer, reel e formulário de contato da home, sem a abertura (intro).
+import Base from './Base.astro';
+import Header from '../components/Header.astro';
+import About from '../components/About.astro';
+import Footer from '../components/Footer.astro';
+import Reel from '../components/Reel.astro';
+import ContactDrawer from '../components/ContactDrawer.astro';
+import { getContent } from '../data/i18n.js';
+
+const { about } = getContent(Astro.currentLocale);
+---
+
+<Base title={about.title} description={about.description} intro={false}>
+  <Header />
+  <main id="conteudo">
+    <About />
+  </main>
+  <Footer />
+  <Reel />
+  <ContactDrawer />
+</Base>

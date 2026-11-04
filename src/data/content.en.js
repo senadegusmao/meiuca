@@ -22,7 +22,7 @@ export const introImages = [0, 3, 5, 7, 8].map((i) => heroImages[i]);
 
 export const tenYears = {
   lines: ['For 10 years we have helped companies reimagine', 'their digital experiences.'],
-  cta: { label: 'About us', href: pt.tenYears.cta.href },
+  cta: { label: 'About us', href: '/en/about/' },
 };
 
 const servicesText = [
@@ -79,8 +79,8 @@ export const posts = pt.posts.map((p, i) => ({ ...p, ...postsText[i] }));
 
 export const nav = [
   { label: 'Home', href: '/en/' },
-  { label: 'About', href: '#' },
-  { label: 'Blog', href: '#blog' },
+  { label: 'About', href: '/en/about/' },
+  { label: 'Blog', href: '/en/#blog' },
   { label: 'Contact', href: '#contato' },
 ];
 export const menu = nav;
@@ -108,6 +108,41 @@ export const clients = pt.clients.map((c, i) => ({
   description: clientsText[i],
   link: c.link && { ...c.link, label: 'View project' },
 }));
+
+// About page (/en/about/)
+export const about = {
+  ...pt.about,
+  title: 'About — Meiuca',
+  description:
+    'We started in 2017 wanting to build a studio that combined design and social impact. Today we help companies with brand, Design Systems, products and artificial intelligence.',
+  heading: heroText,
+  paragraphs: [
+    'We started in 2017 wanting to build a studio that combined design and social impact. The idea was simple: deliver work we were proud of and set aside time for pro bono projects aligned with our worldview. The first one was an app for Indigenous leaders to report climate change.',
+    'With our first commercial client we discovered Design Systems. We tested, made mistakes, learned. We saw the topic coming in strong from Silicon Valley and decided to specialize. It didn’t take long to reach large companies: first Claro, then XP Inc. and dozens of others. Along the way, we understood how important it was to train the market. We have trained more than 3,500 professionals.',
+    'After establishing ourselves in Design Systems, we started helping those same companies with product projects, Design Ops and structuring their chapters. We grew.',
+    'The market has changed a lot over these years: the boom of the field after the pandemic, the layoffs and now the confusing, uncertain and exciting landscape of artificial intelligence. In this context, systematizing design becomes even more relevant. It used to be about consistency and efficiency. Now it is the foundation for bringing together interface standards, automation and AI.',
+    'In a race to solve everything with a prompt, it’s worth remembering differentiation: scaling without quality has side effects. That’s why we make the most of AI without forgetting what only talented people can do.',
+    'We can help evolve your brand, your Design System or your product ecosystem. We can also do it all together and connect your team with artificial intelligence in workflows that truly bring speed and gains to everyday work.',
+  ],
+  cta: { label: 'Let’s talk', href: '#contato' },
+  numbers: [
+    { prefix: '', value: 10, label: 'years' },
+    { prefix: '+', value: 35, label: 'clients' },
+    { prefix: '+', value: 60, label: 'projects' },
+  ],
+  group: [
+    {
+      ...pt.about.group[0],
+      text: 'For interfaces that need to grow without losing their originality: Design Systems, apps, portals, e-commerce and complex systems, crafted with care from start to finish.',
+    },
+    {
+      ...pt.about.group[1],
+      text: 'For those who want to speed up digital transformation with product and technology teams built to measure and ready to run from day one.',
+    },
+  ],
+  visit: 'visit site',
+  groupLabel: 'Group companies',
+};
 
 // Formulário de contato em inglês. O envio vai para o mesmo webhook e com os
 // mesmos valores de "motivo" do português (a automação do Make não muda).

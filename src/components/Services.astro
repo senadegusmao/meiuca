@@ -15,7 +15,9 @@ const pic = { formats: ['avif', 'webp'], fallbackFormat: 'jpg', quality: 85, loa
   <h2 class="services__title reveal-chars" id="services-title" data-reveal><SplitChars text={ui.services} /></h2>
   <!-- A lista fica presa enquanto o scroll abre um serviço por vez (initServices) -->
   <div class="services__stage" data-svc-stage>
-
+  <!-- Quando a lista não cabe embaixo do header (celular), ela desliza aqui
+       dentro para o serviço aberto ficar inteiro na tela -->
+  <div class="services__track" data-svc-track>
   <ol class="svc reveal" role="list" data-svc data-header-blend>
     {
       services.map((s, i) => (
@@ -69,6 +71,7 @@ const pic = { formats: ['avif', 'webp'], fallbackFormat: 'jpg', quality: 85, loa
       ))
     }
   </ol>
+  </div>
   </div>
   <div class="services__spacer" aria-hidden="true" data-svc-spacer></div>
 </section>

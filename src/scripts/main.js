@@ -679,6 +679,7 @@ function initServices() {
       opening.classList.add('is-open', 'is-expanded');
       setAria(opening, true);
     }
+    applyShift?.();
     if (reducedMotion.matches) return;
     // alturas de chegada (pelo CSS)
     const c1 = closing?.offsetHeight ?? 0;
@@ -723,6 +724,7 @@ function initServices() {
   // baixo (e volta ao subir). Com movimento reduzido, só o clique.
   const section = document.querySelector('[data-svc-section]');
   const stage = section?.querySelector('[data-svc-stage]');
+  const track = section?.querySelector('[data-svc-track]');
   const spacer = section?.querySelector('[data-svc-spacer]');
   const n = items.length;
   const HOLD = 0.3; // pausa no primeiro e no último, em "vezes"
@@ -732,6 +734,13 @@ function initServices() {
   let current = items.findIndex((it) => it.classList.contains('is-open'));
   let forcedY = null; // rolagem pedida por um clique: não abre os do meio do caminho
   const yFor = (i) => pinStart + ((i + HOLD) / (n - 1 + 2 * HOLD)) * travel;
+  let shifts = [];
+  const applyShift = (animate = true) => {
+    if (!track) return;
+    const i = items.findIndex((it) => it.classList.contains('is-open'));
+    track.classList.toggle('no-anim', !animate || reducedMotion.matches);
+    track.style.setProperty('--svc-shift', `${shifts[i] || 0}px`);
+  };
 
   if (stage && spacer && n > 1) {
     measurers.push(() => {
@@ -740,9 +749,26 @@ function initServices() {
       if (!pinned) {
         spacer.style.height = '';
         stage.style.top = '';
+        stage.style.height = '';
+        stage.classList.remove('is-clipped');
+        shifts = [];
+        applyShift(false);
         return;
       }
       const headerH = document.querySelector('[data-header]')?.offsetHeight || 0;
+      // A lista inteira cabe embaixo do header? Se não (celular), a área presa
+      // fica com a altura que sobra e a lista desliza dentro dela: cada serviço
+      // aberto aparece inteiro, logo abaixo do header, nunca por baixo dele.
+      const avail = vh - headerH;
+      const fullH = list.offsetHeight;
+      const clipped = fullH > avail;
+      stage.classList.toggle('is-clipped', clipped);
+      stage.style.height = clipped ? `${avail}px` : '';
+      const openH = parseFloat(list.style.getPropertyValue('--svc-open')) || 0;
+      const closed = items.find((it) => !it.classList.contains('is-expanded'));
+      const rowH = closed ? closed.offsetHeight : 0;
+      shifts = clipped ? items.map((_, i) => clamp(i * rowH + openH - avail, 0, i * rowH)) : [];
+      applyShift(false);
       const stageH = stage.offsetHeight;
       const stickyTop = Math.min(headerH, vh - stageH);
       stage.style.top = `${stickyTop}px`;
@@ -867,11 +893,12 @@ function initCursorPill() {
   let cx = 0;
   let cy = 0;
   let raf = 0;
+  let offset = 14;
   const follow = () => {
     const k = reducedMotion.matches ? 1 : 0.22;
     cx += (x - cx) * k;
     cy += (y - cy) * k;
-    pill.style.transform = `translate3d(${(cx + 14).toFixed(1)}px, ${(cy + 14).toFixed(1)}px, 0)`;
+    pill.style.transform = `translate3d(${(cx + offset).toFixed(1)}px, ${(cy + offset).toFixed(1)}px, 0)`;
     raf = Math.abs(x - cx) + Math.abs(y - cy) > 0.3 ? requestAnimationFrame(follow) : 0;
   };
   window.addEventListener(
@@ -886,12 +913,115 @@ function initCursorPill() {
   targets.forEach((t) => {
     t.addEventListener('pointerenter', (e) => {
       pill.textContent = t.dataset.cursor;
+      // Círculo (página Sobre): centrado no cursor; pílula: ao lado dele
+      const circle = t.dataset.cursorStyle === 'circle';
+      pill.classList.toggle('is-circle', circle);
+      offset = circle ? -84 : 14;
       cx = x = e.clientX;
       cy = y = e.clientY;
       follow();
       pill.classList.add('is-on');
     });
     t.addEventListener('pointerleave', () => pill.classList.remove('is-on'));
+  });
+}
+
+/* ---------------------------------------------------------
+   Transição entre páginas (PageTransition.astro), a mesma do meiuca.design.
+   Clique num link para outra página do site: o painel cobre a tela e só
+   então a página muda.
+   Âncoras da mesma página, links externos, nova aba e #contato (que abre
+   o formulário) ficam de fora. Com movimento reduzido, nada muda.
+   A chegada é marcada antes de a página aparecer (public/scripts/page-enter.js).
+   --------------------------------------------------------- */
+function initPageTransition() {
+  const curtain = document.querySelector('[data-page-transition]');
+  if (!curtain) return;
+  const LEAVE = 650; // o painel já cobre a tela (0,9s, desacelerando: 99% em 0,65s)
+  let leaving = false;
+  // Fim da chegada: tira a classe para a cortina voltar a poder descer
+  curtain.addEventListener('animationend', (e) => {
+    if (e.animationName === 'page-out') root.classList.remove('is-arriving');
+  });
+  document.addEventListener('click', (e) => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const a = e.target.closest?.('a[href]');
+    if (!a || (a.target && a.target !== '_self') || a.hasAttribute('download')) return;
+    const url = new URL(a.href, window.location.href);
+    if (url.origin !== window.location.origin || !/^https?:$/.test(url.protocol)) return;
+    if (url.pathname === window.location.pathname && url.search === window.location.search && url.hash) return;
+    if (reducedMotion.matches) return;
+    e.preventDefault();
+    if (leaving) return;
+    leaving = true;
+    stopSmooth();
+    root.classList.remove('is-arriving');
+    root.classList.add('is-leaving');
+    // Aviso para a página nova abrir coberta e fazer a outra metade (a saída do painel)
+    try {
+      window.name = 'meiuca:transition';
+    } catch (err) {}
+    setTimeout(() => window.location.assign(url.href), LEAVE);
+  });
+  // Voltando pelo histórico (página guardada em cache): sem a cortina
+  window.addEventListener('pageshow', (e) => {
+    if (!e.persisted) return;
+    leaving = false;
+    root.classList.remove('is-leaving', 'is-arriving');
+  });
+}
+
+/* ---------------------------------------------------------
+   Números da página Sobre: contam de 0 até o valor quando entram na
+   tela (como o contador da abertura) e voltam a 0 quando saem por
+   completo, para contar de novo a cada passagem (como as revelações).
+   --------------------------------------------------------- */
+function initCountUp() {
+  const els = [...document.querySelectorAll('[data-count]')];
+  if (!els.length || !('IntersectionObserver' in window) || reducedMotion.matches) return;
+  const DURATION = 1600;
+  const ease = (t) => 1 - Math.pow(1 - t, 3);
+  const runs = new Map();
+  const set = (el, v) => {
+    el.textContent = String(v);
+  };
+  const run = (el, delay) => {
+    const target = Number(el.dataset.count) || 0;
+    let t0 = 0;
+    const tick = (now) => {
+      t0 ||= now + delay;
+      const t = Math.max(0, Math.min(1, (now - t0) / DURATION));
+      set(el, Math.round(target * ease(t)));
+      if (t < 1) runs.set(el, requestAnimationFrame(tick));
+      else runs.delete(el);
+    };
+    runs.set(el, requestAnimationFrame(tick));
+  };
+  const stop = (el) => {
+    cancelAnimationFrame(runs.get(el));
+    runs.delete(el);
+  };
+  els.forEach((el) => set(el, 0));
+  const enter = new IntersectionObserver(
+    (entries) =>
+      entries.forEach((e) => {
+        if (!e.isIntersecting || runs.has(e.target) || e.target.dataset.done) return;
+        e.target.dataset.done = '1';
+        run(e.target, els.indexOf(e.target) * 100);
+      }),
+    { rootMargin: '0px 0px -12% 0px', threshold: 0.01 },
+  );
+  const leave = new IntersectionObserver((entries) =>
+    entries.forEach((e) => {
+      if (e.isIntersecting) return;
+      stop(e.target);
+      delete e.target.dataset.done;
+      set(e.target, 0);
+    }),
+  );
+  els.forEach((el) => {
+    enter.observe(el);
+    leave.observe(el);
   });
 }
 
@@ -1371,6 +1501,8 @@ initMarquee();
 initWarmup();
 initNewsletter();
 initContact();
+initCountUp();
+initPageTransition();
 initSmoothScroll();
 initEntryCleanup();
 

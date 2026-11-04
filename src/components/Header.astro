@@ -2,11 +2,13 @@
 import { getImage } from 'astro:assets';
 import Logo from '../assets/svg/logo.svg';
 import reelPoster from '../assets/images/reel-poster.png';
-import { getContent, homes } from '../data/i18n.js';
+import { getContent, homes, routes, pageKey } from '../data/i18n.js';
 import { withBase } from '../lib/url.js';
 
 const lang = Astro.currentLocale === 'en' ? 'en' : 'pt';
 const { menu, reel, ui } = getContent(lang);
+// A troca de língua leva para a mesma página na outra língua
+const page = routes[pageKey(Astro.url.pathname)];
 const poster = await getImage({ src: reelPoster, width: 1280, format: 'webp', quality: 82 });
 ---
 
@@ -73,9 +75,9 @@ const poster = await getImage({ src: reelPoster, width: 1280, format: 'webp', qu
         </ul>
         <!-- Troca de língua: português na raiz (/) e inglês em /en/ -->
         <div class="menu__lang" role="group" aria-label={ui.langNav}>
-          <a href={withBase(homes.pt)} hreflang="pt-BR" lang="pt-BR" aria-current={lang === 'pt' ? 'page' : undefined}>PT</a>
+          <a href={withBase(page.pt)} hreflang="pt-BR" lang="pt-BR" aria-current={lang === 'pt' ? 'page' : undefined}>PT</a>
           <span aria-hidden="true">/</span>
-          <a href={withBase(homes.en)} hreflang="en" lang="en" aria-current={lang === 'en' ? 'page' : undefined}>EN</a>
+          <a href={withBase(page.en)} hreflang="en" lang="en" aria-current={lang === 'en' ? 'page' : undefined}>EN</a>
         </div>
       </nav>
     </div>
