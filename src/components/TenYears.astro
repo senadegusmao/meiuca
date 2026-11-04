@@ -1,6 +1,7 @@
 ---
 import { getContent } from '../data/i18n.js';
 import SplitChars from './SplitChars.astro';
+import { withBase } from '../lib/url.js';
 
 // 10 Anos do Figma (nó 809:493): container azul (#001EFF, 1360×671 no
 // desktop) com o texto de 32px no centro e um tracejado de fundo (2 linhas
@@ -59,6 +60,6 @@ const circles = [
       <SplitChars text={tenYears.lines[1]} />
     </h2>
     <!-- Mesmo estilo do "Ver mais" de Insights; no meio do espaço abaixo do texto -->
-    <a class="ten__cta pill-button reveal reveal-d2" href={tenYears.cta.href}>{tenYears.cta.label}</a>
+    <a class="ten__cta pill-button reveal reveal-d2" href={withBase(tenYears.cta.href)}>{tenYears.cta.label}</a>
   </div>
 </section>
