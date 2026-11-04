@@ -1,0 +1,94 @@
+---
+// Página Sobre (Figma "Site 2026", nó 921:2667) com as animações do site:
+// - título: o mesmo texto do Hero, surgindo letra por letra e acendendo
+//   palavra por palavra com o scroll (data-scroll-words, como na home);
+// - texto longo: cada parágrafo surge palavra por palavra ao entrar na tela
+//   (.reveal-chars por palavra, como os títulos); o botão "Vamos conversar"
+//   (abre o formulário de contato) sobe (.reveal);
+// - números contam de 0 até o valor quando entram na tela (initCountUp);
+// - empresas do grupo: com link, o cursor vira o círculo azul "ver site"
+//   do Figma (data-cursor + data-cursor-style="circle").
+import { getContent } from '../data/i18n.js';
+import { splitText } from '../lib/split.js';
+import { withBase } from '../lib/url.js';
+import LogoMeiuca from '../assets/svg/logo-meiuca-grupo.svg';
+import LogoRaio from '../assets/svg/logo-raio.svg';
+
+const { about } = getContent(Astro.currentLocale);
+const words = splitText(about.heading);
+const total = words.reduce((n, w) => n + w.chars.length, 0);
+const step = Math.min(0.85, 100 / total);
+const logos = { meiuca: LogoMeiuca, raio: LogoRaio };
+// Palavras de cada parágrafo (a cascata de cada um dura até ~0,85s)
+const paragraphs = about.paragraphs.map((p) => p.split(/\s+/));
+---
+
+<section class="about" aria-labelledby="about-title">
+  <h1 class="about__title" id="about-title" data-scroll-words data-replay>
+    <span class="visually-hidden">{about.heading}</span><span aria-hidden="true">{
+      words.map((w) => (
+        <>
+          <span class="w split-word">
+            {w.chars.map((c) => <span class={`enter-char d2 cd${Math.round(c.i * step)}`}>{c.ch}</span>)}
+          </span>{' '}
+        </>
+      ))
+    }</span>
+  </h1>
+  <div class="about__story">
+    <!-- Texto longo: cada parágrafo surge palavra por palavra ao entrar na tela
+         (a mesma revelação dos títulos, .reveal-chars, por palavra) -->
+    <div class="about__text">
+      {
+        paragraphs.map((words) => (
+          <p class="reveal-chars" data-reveal>
+            {words.map((w, i) => (
+              <>
+                <span class={`ch cd${Math.min(Math.round(i * Math.min(1, 70 / words.length)), 239)}`}>{w}</span>{' '}
+              </>
+            ))}
+          </p>
+        ))
+      }
+    </div>
+    <a class="about__cta pill-button reveal reveal-d2" href={about.cta.href}>{about.cta.label}</a>
+  </div>
+</section>
+
+<section class="about-numbers" aria-label={about.numbers.map((n) => `${n.prefix}${n.value} ${n.label}`).join(', ')}>
+  {
+    about.numbers.map((n, i) => (
+      <div class={`about-numbers__item reveal reveal-d${i}`} aria-hidden="true">
+        <span class="about-numbers__value">{n.prefix}<span data-count={n.value}>{n.value}</span></span>
+        <span class="about-numbers__label">{n.label}</span>
+      </div>
+    ))
+  }
+</section>
+
+<section class="about-group" aria-label={about.groupLabel}>
+  <ul class="about-group__list" role="list">
+    {
+      about.group.map((g) => {
+        const Logo = logos[g.logo];
+        const inner = (
+          <>
+            <Logo class="about-group__logo" width="80" height="24" role="img" aria-label={g.name} />
+            <p class="about-group__text">{g.text}</p>
+          </>
+        );
+        return (
+          <li class="about-group__item reveal">
+            {g.href ? (
+              <a class="about-group__row" href={withBase(g.href)} data-cursor={about.visit} data-cursor-style="circle">
+                {inner}
+              </a>
+            ) : (
+              <div class="about-group__row">{inner}</div>
+            )}
+          </li>
+        );
+      })
+    }
+  </ul>
+</section>

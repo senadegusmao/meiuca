@@ -62,8 +62,7 @@ export const introImages = [0, 3, 5, 7, 8].map((i) => heroImages[i]);
 export const tenYears = {
   // texto da seção "conteudo" do Figma, em duas linhas (no celular quebra sozinho)
   lines: ['Há 10 anos ajudamos empresas a reimaginar', 'suas experiências digitais.'],
-  // link provisório até a página Sobre existir
-  cta: { label: 'Sobre nós', href: '#' },
+  cta: { label: 'Sobre nós', href: '/sobre/' },
 };
 
 // Serviços (layout do iverson.inc): lista em sanfona. Nomes, textos e
@@ -159,8 +158,8 @@ export const posts = [
 // Troque o "#" do Sobre pela página quando ela existir.
 export const nav = [
   { label: 'Home', href: '/' },
-  { label: 'Sobre', href: '#' },
-  { label: 'Blog', href: '#blog' },
+  { label: 'Sobre', href: '/sobre/' },
+  { label: 'Blog', href: '/#blog' },
   { label: 'Contato', href: '#contato' },
 ];
 export const menu = nav;
@@ -233,6 +232,49 @@ export const clients = [
     link: caseLink,
   },
 ];
+
+// Página Sobre (/sobre/), do Figma (nó 921:2667). O título é o mesmo texto do
+// Hero da home. "Vamos conversar" abre o formulário de contato.
+export const about = {
+  title: 'Sobre — Meiuca',
+  description:
+    'Começamos em 2017 com a vontade de criar um estúdio que misturasse design e impacto social. Hoje ajudamos empresas com marca, Design System, produtos e inteligência artificial.',
+  heading: heroText,
+  paragraphs: [
+    'Começamos em 2017 com a vontade de criar um estúdio que misturasse design e impacto social. A ideia era simples: fazer entregas que nos orgulhassem e reservar tempo para projetos pro bono alinhados com a nossa visão de mundo. O primeiro foi um app para lideranças indígenas reportarem mudanças climáticas.',
+    'No nosso primeiro cliente comercial descobrimos o Design System. Testamos, erramos, aprendemos. Vimos que o tema vinha forte do Vale do Silício e decidimos nos especializar. Não demorou para chegarmos às grandes empresas: primeiro a Claro, depois a XP Inc. e dezenas de outras. No caminho, entendemos a importância de formar o mercado. Formamos mais de 3.500 profissionais.',
+    'Depois de nos consolidar no assunto Design System, passamos a ajudar essas mesmas empresas com projetos de produto, Design Ops e com a estruturação de seus chapters. Crescemos.',
+    'O mercado mudou muito nesses anos: a explosão da área no pós-pandemia, os layoffs e, agora, o cenário confuso, incerto e empolgante da inteligência artificial. Nesse contexto, a sistematização do design ganha ainda mais relevância. Antes era sobre consistência e eficiência. Agora é a base para unir padrões de interface, automação e IA.',
+    'Numa corrida para resolver tudo com um prompt, vale lembrar da diferenciação: escalar sem qualidade traz efeitos colaterais. Por isso aproveitamos o melhor da IA, sem esquecer o que só pessoas de talento são capazes de fazer.',
+    'Podemos ajudar a evoluir a sua marca, seu Design System ou seu ecossistema de produtos. Também podemos fazer tudo isso junto e ainda conectar seu time a com inteligência artificial em fluxos de trabalho realmente capazes de trazer velocidade e ganhos ao dia a dia.',
+  ],
+  cta: { label: 'Vamos conversar', href: '#contato' },
+  // Números: contam de 0 até o valor quando entram na tela
+  numbers: [
+    { prefix: '', value: 10, label: 'anos' },
+    { prefix: '+', value: 35, label: 'clientes' },
+    { prefix: '+', value: 60, label: 'projetos' },
+  ],
+  // Empresas do grupo. Com `href`, a linha vira link e o cursor "ver site"
+  // aparece no hover; sem `href`, fica só o texto (a Meiuca, por pedido do
+  // João, e a Raio, até o site dela estar definido).
+  group: [
+    {
+      logo: 'meiuca',
+      name: 'Meiuca',
+      text: 'Pra interfaces que precisam crescer sem perder a originalidade: Design Systems, apps, portais, e-commerces e sistemas complexos, feitos com cuidado do início ao fim.',
+      href: '', // sem link nem o cursor "ver site" (pedido do João)
+    },
+    {
+      logo: 'raio',
+      name: 'Raio',
+      text: 'Pra quem quer acelerar a transformação digital com times de produto e tecnologia montados sob medida e prontos pra rodar desde o primeiro dia.',
+      href: '',
+    },
+  ],
+  visit: 'ver site',
+  groupLabel: 'Empresas do grupo',
+};
 
 // Formulário de contato: cópia do drawer de contato do meiuca.design (o
 // componente ContactDrawer do Framer). Abre pelos links "Contato" (#contato).

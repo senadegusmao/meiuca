@@ -219,6 +219,17 @@ address {
    (--intro-offset). Atrasos: classes .dN (elementos) e .cdN (letras).
    ========================================================= */
 
+html.no-intro {
+  --intro-offset: 0.15s;
+}
+/* Chegando de outra página do site: sem a intro; a entrada começa enquanto a
+   cortina da transição sobe (vem depois de .no-intro para valer nas duas) */
+html.is-arriving {
+  --intro-offset: 0.8s;
+}
+html.is-arriving .intro {
+  display: none;
+}
 :root {
   --intro-offset: 2.05s;
   /* mola suave, ~3% de overshoot (equivalente ao spring bounce 0.2 do Framer) */
@@ -542,6 +553,59 @@ address {
   .intro__img.i2 { left: 24%; top: 74%; }
   .intro__img.i3 { left: 76%; top: 78%; }
   .intro__img.i4 { left: 50%; top: 13%; }
+}
+
+/* =========================================================
+   Transição entre páginas (PageTransition.astro, initPageTransition)
+   A mesma do meiuca.design, medida quadro a quadro no site: um painel
+   #111 entra pela esquerda e cobre a tela (0,9s, desacelerando: metade
+   do caminho em ~0,1s); na página nova, sai pela direita (1,2s, começa
+   devagar e acelera no fim), revelando a página da esquerda para a direita.
+   ========================================================= */
+.page-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 30000;
+  background: #111;
+  pointer-events: none;
+  visibility: hidden;
+  transform: translate3d(-100%, 0, 0);
+}
+html.is-leaving .page-transition {
+  visibility: visible;
+  pointer-events: auto;
+  transform: none;
+  transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+html.is-arriving .page-transition {
+  visibility: visible;
+  transform: none;
+  animation: page-out 1.2s cubic-bezier(0.5, 0, 0.75, 0) both;
+}
+@keyframes page-out {
+  to {
+    transform: translate3d(100%, 0, 0);
+    visibility: hidden;
+  }
+}
+/* Chegando: como no meiuca.design, o painel revela a página já montada
+   (header, título, imagens do Hero sem a entrada) e as revelações (o texto
+   longo, por exemplo) acontecem quando ele está quase saindo */
+html.is-arriving .enter,
+html.is-arriving .enter-char,
+html.is-arriving .enter-rise {
+  animation: none;
+}
+html.is-arriving .reveal {
+  transition-delay: calc(var(--rd, 0s) + 0.9s);
+}
+html.is-arriving .reveal-chars .ch {
+  transition-delay: calc(var(--cd, 0s) + 0.9s);
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-transition {
+    display: none;
+  }
 }
 
 /* =========================================================
@@ -996,7 +1060,8 @@ body.is-locked .site-header.is-hidden {
 .hero__desc .w {
   color: var(--c-fg);
 }
-.js .hero__desc .w {
+.js .hero__desc .w,
+.js .about__title .w {
   color: rgba(255, 255, 255, var(--a, 0.22));
 }
 
@@ -1290,11 +1355,24 @@ html:not(.js) .ten__half {
   position: relative; /* referência do offsetTop da lista (initServices) */
   padding: clamp(120px, 15.1vw, 218px) 0 var(--space-128);
 }
-/* Presa enquanto o scroll abre os serviços, um por vez (initServices). O JS
-   define o "top" (abaixo do header, ou mais acima se a seção não couber na
-   tela) e a altura do espaçador (a rolagem dessa etapa). */
+/* Presa logo abaixo do header enquanto o scroll abre os serviços, um por vez
+   (initServices; o JS define o "top" e a altura do espaçador, a rolagem dessa
+   etapa). Se a lista não cabe embaixo do header (celular), a área presa fica
+   com a altura que sobra e corta o resto; a lista desliza lá dentro (.is-clipped,
+   --svc-shift) para o serviço aberto ficar inteiro na tela, sem passar por
+   baixo do header (pedido do João). Mesma curva e tempo da sanfona. */
 .services.is-pinned .services__stage {
   position: sticky;
+}
+.services__stage.is-clipped {
+  overflow: hidden;
+}
+.services__track {
+  transform: translate3d(0, calc(var(--svc-shift, 0px) * -1), 0);
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.services__track.no-anim {
+  transition: none;
 }
 /* Mesmo estilo do título "Clientes" (18/28, à esquerda, 32px até a lista) */
 .services__title {
@@ -1769,6 +1847,21 @@ html:not(.js) .ten__half {
   opacity: 1;
   scale: 1;
 }
+/* Variante da página Sobre (Figma): círculo azul de 168px, centrado no cursor */
+.cursor-pill.is-circle {
+  display: grid;
+  place-items: center;
+  width: 168px;
+  height: 168px;
+  padding: 0;
+  border-radius: 50%;
+  background: #1474ff;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  color: #000;
+  font-size: 20px;
+  letter-spacing: 0.02em;
+}
 @media (hover: none) {
   .cursor-pill {
     display: none;
@@ -2093,7 +2186,8 @@ html:not(.js) .ten__half {
   .marquee__track {
     animation: none;
   }
-  .js .hero__desc .w {
+  .js .hero__desc .w,
+  .js .about__title .w {
     color: var(--c-fg);
   }
 }
@@ -2733,5 +2827,158 @@ select.cd__input {
   .cd__backdrop,
   .cd * {
     transition: none !important;
+  }
+}
+
+/* =========================================================
+   Sobre (Figma "Site 2026", nó 921:2667)
+   Título de 80px (o mesmo texto do Hero), texto numa coluna de 344px
+   a 59% da largura, números de 102px e as empresas do grupo.
+   ========================================================= */
+.about {
+  padding: calc(var(--header-h) + 60px) var(--gutter) 60px;
+}
+.about__title {
+  max-width: 13.125em; /* 1050px a 80px */
+  font-size: var(--fs-80);
+  line-height: 1.2;
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  text-wrap: pretty;
+}
+.about__title .w {
+  color: var(--c-fg);
+}
+/* Coluna do texto: começa a 808 de 1360 e tem 344 (sobram 208 à direita) */
+.about__story {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 40px;
+  margin-top: clamp(64px, 8.33vw, 120px);
+  padding: 0 15.2941% 0 59.4118%;
+}
+.about__text {
+  font-size: 16px;
+  line-height: 1.6;
+  font-weight: 300;
+  color: #777;
+}
+.about__text p + p {
+  margin-top: 1.6em;
+}
+/* A pílula do site, no tamanho do Figma (56px, 16px) */
+.about__cta {
+  height: 56px;
+  padding: 0 32px;
+  font-size: 16px;
+  letter-spacing: 0.02em;
+}
+.about-numbers {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 var(--gutter) 120px;
+}
+.about-numbers__item {
+  display: flex;
+  flex: 1 0 0;
+  align-items: center;
+  gap: 24px;
+  min-width: 0;
+  white-space: nowrap;
+}
+.about-numbers__value {
+  font-size: clamp(64px, 7.08vw, 102px);
+  line-height: 1.2;
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+/* Espaço do número final reservado: o rótulo não anda enquanto conta */
+.about-numbers__value [data-count] {
+  display: inline-block;
+  min-width: 2ch;
+}
+.about-numbers__label {
+  font-size: clamp(18px, 1.67vw, 24px);
+  line-height: 1.2;
+  font-weight: 300;
+  letter-spacing: -0.03em;
+}
+.about-group {
+  padding: 0 var(--gutter) 150px;
+}
+.about-group__item:not(:last-child) {
+  padding-bottom: 48px;
+  border-bottom: 1px solid rgba(119, 119, 119, 0.4);
+}
+.about-group__item + .about-group__item {
+  margin-top: 56px;
+}
+/* Logo à esquerda e texto na mesma coluna do texto de cima */
+.about-group__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding-right: 15.2941%;
+  color: var(--c-fg);
+}
+.about-group__logo {
+  flex: none;
+}
+.about-group__text {
+  flex: 0 0 29.6875%; /* 342 dos 1152 da linha: começa na coluna do texto de cima */
+  font-size: 16px;
+  line-height: 1.6;
+  font-weight: 300;
+  color: #777;
+  transition: color 0.4s var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  /* O círculo "ver site" faz o papel do cursor */
+  .about-group__row[data-cursor] {
+    cursor: none;
+  }
+  .about-group__row[data-cursor]:hover .about-group__text {
+    color: var(--c-fg);
+  }
+}
+.about-group__row:focus-visible {
+  outline: 1px dotted var(--c-fg);
+  outline-offset: 8px;
+}
+@media (max-width: 1080px) {
+  .about__story {
+    padding: 0 0 0 40%;
+  }
+  .about-group__row {
+    padding-right: 0;
+  }
+  .about-group__text {
+    flex-basis: 60%;
+  }
+}
+@media (max-width: 760px) {
+  .about {
+    padding-top: calc(var(--header-h) + 40px);
+  }
+  .about__story {
+    padding: 0;
+  }
+  .about-numbers {
+    flex-direction: column;
+    gap: 16px;
+    padding-bottom: 96px;
+  }
+  .about-group {
+    padding-bottom: 120px;
+  }
+  .about-group__row {
+    flex-direction: column;
+    gap: 24px;
+  }
+  .about-group__text {
+    flex-basis: auto;
   }
 }

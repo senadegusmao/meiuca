@@ -61,6 +61,15 @@ Quem ativa "reduzir movimento" no sistema não vê a intro e recebe uma versão 
 
 **Performance das animações:** quando a entrada termina, as animações são desligadas (classe `is-entered`), e os estados escondidos usam `opacity: 0`. Assim o navegador não mantém uma camada de efeito por letra. No topo da página, o custo caiu de 113 camadas por quadro para 4. O blur das letras é curto (só no começo de cada letra) e não existe nas letras que saem; nenhum hover anima `filter`; e as imagens são carregadas e decodificadas com 1,5 tela de antecedência.
 
+## Páginas
+
+- Home: `/` e `/en/` (`src/layouts/Home.astro`).
+- Sobre: `/sobre/` e `/en/about/` (`src/layouts/AboutPage.astro` e `src/components/About.astro`), do Figma (nó `921:2667`): título com a entrada letra por letra, texto longo surgindo palavra por palavra, botão "Vamos conversar" (abre o contato), números que contam ao entrar na tela e as empresas do grupo (com link, o cursor vira o círculo "ver site"; hoje as duas estão sem link).
+
+## Transição entre páginas
+
+A mesma do meiuca.design: ao clicar num link para outra página do site, um painel escuro entra pela esquerda e cobre a tela; na página nova, ele sai pela direita revelando a página. A intro completa só aparece quando se chega à home de fora do site.
+
 ## Línguas
 
 Português na raiz (`/`) e inglês em `/en/`. A troca PT / EN fica no menu aberto, embaixo dos links. Textos em `src/data/content.js` (português) e `src/data/content.en.js` (inglês); rótulos e mensagens da interface ficam em `ui`, nos dois arquivos. As duas páginas usam o mesmo `src/layouts/Home.astro`.
@@ -85,7 +94,8 @@ O build gera versões AVIF, WebP e JPG em vários tamanhos com `srcset` (qualida
 ## Pendências
 
 - [ ] Tags definitivas dos serviços (`services`, em `src/data/content.js`). Hoje são sugestões.
-- [ ] Links dos projetos dos clientes e do "Sobre nós" (`clients` e `tenYears`, em `src/data/content.js`). Hoje são `#`.
+- [ ] Links dos projetos dos clientes (`clients`, em `src/data/content.js`). Hoje são `#`.
+- [ ] Site da Raio na página Sobre (`about.group`, em `src/data/content.js`).
 - [ ] Conectar a newsletter a um serviço. Hoje só valida o e-mail e mostra uma mensagem de sucesso, sem enviar nada (ver `TODO` em `main.js`). Depois, liberar o domínio do serviço em `connect-src` / `form-action` na CSP.
 - [ ] URLs do LinkedIn e Instagram (`src/data/content.js`).
 - [ ] Links do menu e dos posts do blog (hoje `#`).

@@ -1,0 +1,11 @@
+---
+// Cortina da transição entre páginas: a mesma do meiuca.design (medida
+// quadro a quadro no site): um painel #111 que entra pela esquerda e cobre a
+// tela; na página nova, ele sai pela direita revelando a página.
+// - Saindo (clique num link para outra página; initPageTransition): entra
+//   da esquerda em 0,9s, desacelerando, e a página muda já coberta.
+// - Chegando (html.is-arriving, posto por public/scripts/page-enter.js): sai
+//   pela direita em 1,2s, começando devagar e acelerando.
+---
+
+<div class="page-transition" aria-hidden="true" data-page-transition></div>
